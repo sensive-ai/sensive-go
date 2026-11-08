@@ -8,7 +8,7 @@ go 1.26.0
 replace github.com/sensive-ai/sensive-go/client => ../client
 
 require (
-	github.com/sensive-ai/sensive-go/client v0.0.0-00010101000000-000000000000
+	github.com/sensive-ai/sensive-go/client v0.1.0
 	golang.org/x/net v0.62.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260817212433-ac3dfec99bb1
 	google.golang.org/grpc v1.85.0

@@ -31,11 +31,20 @@ setting.
 
 ## Versions
 
-Each module is versioned on its own, with tags named for its directory:
-`client/v0.1.0`, `grpc/v0.1.0`. The SDK follows semantic versioning and is
-at v0, so a minor version may change the API. A version, once tagged, is
-never moved or replaced. Each module's `go.mod` names the Go release and
-the dependency versions it requires.
+The SDK follows semantic versioning and is at v0:
+
+- A patch release (`v0.1.0` to `v0.1.1`) fixes or adds without breaking
+  anything, so it is always safe to take.
+- A minor release (`v0.1.0` to `v0.2.0`) may change the API or the
+  configuration, or require a newer Go. Its
+  [release notes](https://github.com/sensive-ai/sensive-go/releases) say
+  what to change.
+
+Use the same minor version of both modules: `grpc` v0.2.x with `client`
+v0.2.x.
+
+Each module requires the Go release its `go.mod` names, or a newer one,
+and is tested on that release and on the newest.
 
 ## Security
 
