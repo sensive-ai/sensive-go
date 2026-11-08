@@ -2,6 +2,10 @@
 # current. A module's go.mod requires the versions it is tested against,
 # and Go builds a customer's program with the highest version any module
 # requires, so these are the oldest versions a customer can end up with.
+#
+# The gRPC module builds against the client in ../client, so a dependency
+# the two share is updated in both at once: one pull request per
+# dependency, across both directories.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -9,10 +13,12 @@ updates:
     schedule:
       interval: weekly
   - package-ecosystem: gomod
-    directory: /client
+    directories:
+      - /client
+      - /grpc
     schedule:
       interval: weekly
-  - package-ecosystem: gomod
-    directory: /grpc
-    schedule:
-      interval: weekly
+    groups:
+      go:
+        patterns: ["*"]
+        group-by: dependency-name
