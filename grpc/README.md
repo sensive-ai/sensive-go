@@ -5,15 +5,23 @@ Sensive access control for Go gRPC services, imported as `sensivegrpc`.
 Sensive uses your organization's access policies to decide whether a
 person or AI agent inside your organization may perform an operation. You
 describe what each method does with data as protobuf options in your
-service's own `.proto` files.
-The server interceptors in this module read those options on every call,
-recognize who is calling, ask the Dynamic Access Checker, and let the call
-through or refuse it.
+service's own `.proto` files. The server interceptors in this module read
+those options on every call, recognize who is calling, ask the Dynamic
+Access Checker, and let the call through or refuse it.
 
-| Module | Import as | What it is |
-|---|---|---|
-| `github.com/sensive-ai/sensive-go/grpc` | `sensivegrpc` | The interceptors, and the Go bindings of the Sensive options (`.../grpc/gen/sensive/v1`) |
-| `github.com/sensive-ai/sensive-go/client` | `sensiveclient` | The client of the Dynamic Access Checker, which this module uses; the request types are its packages `.../gen/dynax/access/v1` (`accessv1`) and `.../gen/sensive/taxonomy/v1` (`taxonomyv1`) |
+```bash
+go get github.com/sensive-ai/sensive-go/grpc
+```
+
+```go
+import (
+    sensivegrpc "github.com/sensive-ai/sensive-go/grpc"
+    // The client: OwnerID and OwnerEmail, and a Checker of your own.
+    sensiveclient "github.com/sensive-ai/sensive-go/client"
+    // The request types: the Owner an owner lookup returns.
+    accessv1 "github.com/sensive-ai/sensive-go/client/gen/dynax/access/v1"
+)
+```
 
 ## How it works
 
@@ -159,14 +167,14 @@ func owner(ctx context.Context, key string) (*accessv1.Owner, error) {
     if err != nil {
         return nil, err
     }
-    return sensivegrpc.OwnerID(account.CustomerID), nil
+    return sensiveclient.OwnerID(account.CustomerID), nil
 }
 ```
 
 One lookup serves every method with an `owner_field`: the interceptor reads
 that field from the request and passes its value. An empty field is no
-owner, and the lookup is not called. Return `sensivegrpc.OwnerID(id)` or
-`sensivegrpc.OwnerEmail(email)`, setting both fields of the `Owner` when you know
+owner, and the lookup is not called. Return `sensiveclient.OwnerID(id)` or
+`sensiveclient.OwnerEmail(email)`, setting both fields of the `Owner` when you know
 both; `nil, nil` for no owner; or an error, which fails the check.
 
 A method with `has_owner` gets a resolver of its own, typed by its request:
@@ -174,7 +182,7 @@ A method with `has_owner` gets a resolver of its own, typed by its request:
 ```go
 sensivegrpc.Owner(ledgerpb.Transactions_Transfer_FullMethodName,
     func(ctx context.Context, req *ledgerpb.TransferRequest) (*accessv1.Owner, error) {
-        return sensivegrpc.OwnerID(req.GetSource().GetCustomerId()), nil
+        return sensiveclient.OwnerID(req.GetSource().GetCustomerId()), nil
     })
 ```
 
