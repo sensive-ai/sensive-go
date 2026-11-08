@@ -36,8 +36,8 @@ func TestTheMatchersPassTheTwoTokensUnrenamedAndDeferEverythingElse(t *testing.T
 	prefixing := func(key string) (string, bool) { return "prefixed-" + key, true }
 
 	in := IncomingHeaderMatcher(prefixing)
-	if got, ok := in("Dynax-Justification-Token"); !ok || got != JustificationTokenKey {
-		t.Fatalf("incoming justification: %q %v", got, ok)
+	if got, ok := in("Sensive-Context-Token"); !ok || got != ContextTokenKey {
+		t.Fatalf("incoming context token: %q %v", got, ok)
 	}
 	if got, _ := in("X-Other"); got != "prefixed-X-Other" {
 		t.Fatalf("other incoming headers are next's: %q", got)

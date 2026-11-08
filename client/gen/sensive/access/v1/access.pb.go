@@ -19,13 +19,13 @@
 // versions:
 // 	protoc-gen-go v1.36.12
 // 	protoc        (unknown)
-// source: dynax/access/v1/access.proto
+// source: sensive/access/v1/access.proto
 
 // Real-time access control API for Sensive.
 //
 // The Dynamic Access Checker evaluates access requests against the
 // organization's policies to decide whether a principal is allowed or denied
-// access to protected resources, and validates the justification tokens
+// access to protected resources, and validates the context tokens
 // requests carry.
 //
 // Applications integrate through an SDK (recommended) or call the API
@@ -85,11 +85,11 @@ func (x Mode_Value) String() string {
 }
 
 func (Mode_Value) Descriptor() protoreflect.EnumDescriptor {
-	return file_dynax_access_v1_access_proto_enumTypes[0].Descriptor()
+	return file_sensive_access_v1_access_proto_enumTypes[0].Descriptor()
 }
 
 func (Mode_Value) Type() protoreflect.EnumType {
-	return &file_dynax_access_v1_access_proto_enumTypes[0]
+	return &file_sensive_access_v1_access_proto_enumTypes[0]
 }
 
 func (x Mode_Value) Number() protoreflect.EnumNumber {
@@ -98,7 +98,7 @@ func (x Mode_Value) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Mode_Value.Descriptor instead.
 func (Mode_Value) EnumDescriptor() ([]byte, []int) {
-	return file_dynax_access_v1_access_proto_rawDescGZIP(), []int{2, 0}
+	return file_sensive_access_v1_access_proto_rawDescGZIP(), []int{2, 0}
 }
 
 type AccessDecision_Value int32
@@ -134,11 +134,11 @@ func (x AccessDecision_Value) String() string {
 }
 
 func (AccessDecision_Value) Descriptor() protoreflect.EnumDescriptor {
-	return file_dynax_access_v1_access_proto_enumTypes[1].Descriptor()
+	return file_sensive_access_v1_access_proto_enumTypes[1].Descriptor()
 }
 
 func (AccessDecision_Value) Type() protoreflect.EnumType {
-	return &file_dynax_access_v1_access_proto_enumTypes[1]
+	return &file_sensive_access_v1_access_proto_enumTypes[1]
 }
 
 func (x AccessDecision_Value) Number() protoreflect.EnumNumber {
@@ -147,7 +147,7 @@ func (x AccessDecision_Value) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use AccessDecision_Value.Descriptor instead.
 func (AccessDecision_Value) EnumDescriptor() ([]byte, []int) {
-	return file_dynax_access_v1_access_proto_rawDescGZIP(), []int{3, 0}
+	return file_sensive_access_v1_access_proto_rawDescGZIP(), []int{3, 0}
 }
 
 // One operation of one application, in the vocabulary of the data taxonomy:
@@ -177,22 +177,22 @@ type AccessCheckRequest struct {
 	// an ARN, a GCP resource name, a document id — when the request identifies
 	// one.
 	ResourceId *string `protobuf:"bytes,8,opt,name=resource_id,json=resourceId,proto3,oneof" json:"resource_id,omitempty"`
-	// JWE-encrypted justification token from a Sensive provider. Contains
-	// validated ticket information for policy evaluation. The caller
-	// forwards it unchanged from the Dynax-Justification-Token header of the
+	// The context token: validated context information for policy
+	// evaluation, issued by Sensive and opaque to the caller. The caller
+	// forwards it unchanged from the Sensive-Context-Token header of the
 	// request it is checking; absent when that request carried none.
-	JustificationToken *string `protobuf:"bytes,9,opt,name=justification_token,json=justificationToken,proto3,oneof" json:"justification_token,omitempty"`
-	// Whether the caller acts on the decision: the SDK's `DYNAX_MODE`. The
+	ContextToken *string `protobuf:"bytes,9,opt,name=context_token,json=contextToken,proto3,oneof" json:"context_token,omitempty"`
+	// Whether the caller acts on the decision: the SDK's `SENSIVE_MODE`. The
 	// decision is made and recorded the same either way; the access log
 	// records the mode with it. Absent reads as ENFORCED.
-	Mode          *Mode_Value `protobuf:"varint,10,opt,name=mode,proto3,enum=dynax.access.v1.Mode_Value,oneof" json:"mode,omitempty"`
+	Mode          *Mode_Value `protobuf:"varint,10,opt,name=mode,proto3,enum=sensive.access.v1.Mode_Value,oneof" json:"mode,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AccessCheckRequest) Reset() {
 	*x = AccessCheckRequest{}
-	mi := &file_dynax_access_v1_access_proto_msgTypes[0]
+	mi := &file_sensive_access_v1_access_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -204,7 +204,7 @@ func (x *AccessCheckRequest) String() string {
 func (*AccessCheckRequest) ProtoMessage() {}
 
 func (x *AccessCheckRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dynax_access_v1_access_proto_msgTypes[0]
+	mi := &file_sensive_access_v1_access_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -217,7 +217,7 @@ func (x *AccessCheckRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AccessCheckRequest.ProtoReflect.Descriptor instead.
 func (*AccessCheckRequest) Descriptor() ([]byte, []int) {
-	return file_dynax_access_v1_access_proto_rawDescGZIP(), []int{0}
+	return file_sensive_access_v1_access_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *AccessCheckRequest) GetPrincipal() *Principal {
@@ -276,9 +276,9 @@ func (x *AccessCheckRequest) GetResourceId() string {
 	return ""
 }
 
-func (x *AccessCheckRequest) GetJustificationToken() string {
-	if x != nil && x.JustificationToken != nil {
-		return *x.JustificationToken
+func (x *AccessCheckRequest) GetContextToken() string {
+	if x != nil && x.ContextToken != nil {
+		return *x.ContextToken
 	}
 	return ""
 }
@@ -293,8 +293,8 @@ func (x *AccessCheckRequest) GetMode() Mode_Value {
 // Response to an access check request
 type AccessCheckResponse struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
-	Result *AccessDecision_Value  `protobuf:"varint,1,opt,name=result,proto3,enum=dynax.access.v1.AccessDecision_Value,oneof" json:"result,omitempty"`
-	// Signed JWT decision token (RS256, JOSE header `typ: dynax-decision+jwt`),
+	Result *AccessDecision_Value  `protobuf:"varint,1,opt,name=result,proto3,enum=sensive.access.v1.AccessDecision_Value,oneof" json:"result,omitempty"`
+	// Signed JWT decision token (RS256, JOSE header `typ: sensive-decision+jwt`),
 	// minted for every decision — ALLOW and DENY alike. Base64-decode the
 	// payload for the non-sensitive claims (jti, decision, application, and
 	// denialReason when denied). The `jti` also keys the decision's access-log
@@ -309,7 +309,7 @@ type AccessCheckResponse struct {
 
 func (x *AccessCheckResponse) Reset() {
 	*x = AccessCheckResponse{}
-	mi := &file_dynax_access_v1_access_proto_msgTypes[1]
+	mi := &file_sensive_access_v1_access_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -321,7 +321,7 @@ func (x *AccessCheckResponse) String() string {
 func (*AccessCheckResponse) ProtoMessage() {}
 
 func (x *AccessCheckResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_dynax_access_v1_access_proto_msgTypes[1]
+	mi := &file_sensive_access_v1_access_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -334,7 +334,7 @@ func (x *AccessCheckResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AccessCheckResponse.ProtoReflect.Descriptor instead.
 func (*AccessCheckResponse) Descriptor() ([]byte, []int) {
-	return file_dynax_access_v1_access_proto_rawDescGZIP(), []int{1}
+	return file_sensive_access_v1_access_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *AccessCheckResponse) GetResult() AccessDecision_Value {
@@ -361,7 +361,7 @@ type Mode struct {
 
 func (x *Mode) Reset() {
 	*x = Mode{}
-	mi := &file_dynax_access_v1_access_proto_msgTypes[2]
+	mi := &file_sensive_access_v1_access_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -373,7 +373,7 @@ func (x *Mode) String() string {
 func (*Mode) ProtoMessage() {}
 
 func (x *Mode) ProtoReflect() protoreflect.Message {
-	mi := &file_dynax_access_v1_access_proto_msgTypes[2]
+	mi := &file_sensive_access_v1_access_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -386,7 +386,7 @@ func (x *Mode) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Mode.ProtoReflect.Descriptor instead.
 func (*Mode) Descriptor() ([]byte, []int) {
-	return file_dynax_access_v1_access_proto_rawDescGZIP(), []int{2}
+	return file_sensive_access_v1_access_proto_rawDescGZIP(), []int{2}
 }
 
 // Result of an access authorization check
@@ -398,7 +398,7 @@ type AccessDecision struct {
 
 func (x *AccessDecision) Reset() {
 	*x = AccessDecision{}
-	mi := &file_dynax_access_v1_access_proto_msgTypes[3]
+	mi := &file_sensive_access_v1_access_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -410,7 +410,7 @@ func (x *AccessDecision) String() string {
 func (*AccessDecision) ProtoMessage() {}
 
 func (x *AccessDecision) ProtoReflect() protoreflect.Message {
-	mi := &file_dynax_access_v1_access_proto_msgTypes[3]
+	mi := &file_sensive_access_v1_access_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -423,7 +423,7 @@ func (x *AccessDecision) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AccessDecision.ProtoReflect.Descriptor instead.
 func (*AccessDecision) Descriptor() ([]byte, []int) {
-	return file_dynax_access_v1_access_proto_rawDescGZIP(), []int{3}
+	return file_sensive_access_v1_access_proto_rawDescGZIP(), []int{3}
 }
 
 // Principal identity for access control decisions. Represents the
@@ -438,7 +438,7 @@ type Principal struct {
 
 func (x *Principal) Reset() {
 	*x = Principal{}
-	mi := &file_dynax_access_v1_access_proto_msgTypes[4]
+	mi := &file_sensive_access_v1_access_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -450,7 +450,7 @@ func (x *Principal) String() string {
 func (*Principal) ProtoMessage() {}
 
 func (x *Principal) ProtoReflect() protoreflect.Message {
-	mi := &file_dynax_access_v1_access_proto_msgTypes[4]
+	mi := &file_sensive_access_v1_access_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -463,7 +463,7 @@ func (x *Principal) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Principal.ProtoReflect.Descriptor instead.
 func (*Principal) Descriptor() ([]byte, []int) {
-	return file_dynax_access_v1_access_proto_rawDescGZIP(), []int{4}
+	return file_sensive_access_v1_access_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Principal) GetEmail() string {
@@ -488,7 +488,7 @@ type Owner struct {
 
 func (x *Owner) Reset() {
 	*x = Owner{}
-	mi := &file_dynax_access_v1_access_proto_msgTypes[5]
+	mi := &file_sensive_access_v1_access_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -500,7 +500,7 @@ func (x *Owner) String() string {
 func (*Owner) ProtoMessage() {}
 
 func (x *Owner) ProtoReflect() protoreflect.Message {
-	mi := &file_dynax_access_v1_access_proto_msgTypes[5]
+	mi := &file_sensive_access_v1_access_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -513,7 +513,7 @@ func (x *Owner) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Owner.ProtoReflect.Descriptor instead.
 func (*Owner) Descriptor() ([]byte, []int) {
-	return file_dynax_access_v1_access_proto_rawDescGZIP(), []int{5}
+	return file_sensive_access_v1_access_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Owner) GetId() string {
@@ -547,7 +547,7 @@ type ErrorResponse struct {
 
 func (x *ErrorResponse) Reset() {
 	*x = ErrorResponse{}
-	mi := &file_dynax_access_v1_access_proto_msgTypes[6]
+	mi := &file_sensive_access_v1_access_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -559,7 +559,7 @@ func (x *ErrorResponse) String() string {
 func (*ErrorResponse) ProtoMessage() {}
 
 func (x *ErrorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_dynax_access_v1_access_proto_msgTypes[6]
+	mi := &file_sensive_access_v1_access_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -572,7 +572,7 @@ func (x *ErrorResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ErrorResponse.ProtoReflect.Descriptor instead.
 func (*ErrorResponse) Descriptor() ([]byte, []int) {
-	return file_dynax_access_v1_access_proto_rawDescGZIP(), []int{6}
+	return file_sensive_access_v1_access_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ErrorResponse) GetError() string {
@@ -589,13 +589,13 @@ func (x *ErrorResponse) GetCode() string {
 	return ""
 }
 
-var File_dynax_access_v1_access_proto protoreflect.FileDescriptor
+var File_sensive_access_v1_access_proto protoreflect.FileDescriptor
 
-const file_dynax_access_v1_access_proto_rawDesc = "" +
+const file_sensive_access_v1_access_proto_rawDesc = "" +
 	"\n" +
-	"\x1cdynax/access/v1/access.proto\x12\x0fdynax.access.v1\x1a\"sensive/taxonomy/v1/taxonomy.proto\"\xd0\x04\n" +
-	"\x12AccessCheckRequest\x128\n" +
-	"\tprincipal\x18\x01 \x01(\v2\x1a.dynax.access.v1.PrincipalR\tprincipal\x12%\n" +
+	"\x1esensive/access/v1/access.proto\x12\x11sensive.access.v1\x1a\"sensive/taxonomy/v1/taxonomy.proto\"\xc4\x04\n" +
+	"\x12AccessCheckRequest\x12:\n" +
+	"\tprincipal\x18\x01 \x01(\v2\x1c.sensive.access.v1.PrincipalR\tprincipal\x12%\n" +
 	"\vapplication\x18\x02 \x01(\tH\x00R\vapplication\x88\x01\x01\x12!\n" +
 	"\toperation\x18\x03 \x01(\tH\x01R\toperation\x88\x01\x01\x12J\n" +
 	"\n" +
@@ -604,21 +604,21 @@ const file_dynax_access_v1_access_proto_rawDesc = "" +
 	"\n" +
 	"categories\x18\x05 \x03(\tR\n" +
 	"categories\x12;\n" +
-	"\x05usage\x18\x06 \x01(\v2%.sensive.taxonomy.v1.UsageDescriptorsR\x05usage\x12,\n" +
-	"\x05owner\x18\a \x01(\v2\x16.dynax.access.v1.OwnerR\x05owner\x12$\n" +
+	"\x05usage\x18\x06 \x01(\v2%.sensive.taxonomy.v1.UsageDescriptorsR\x05usage\x12.\n" +
+	"\x05owner\x18\a \x01(\v2\x18.sensive.access.v1.OwnerR\x05owner\x12$\n" +
 	"\vresource_id\x18\b \x01(\tH\x02R\n" +
-	"resourceId\x88\x01\x01\x124\n" +
-	"\x13justification_token\x18\t \x01(\tH\x03R\x12justificationToken\x88\x01\x01\x124\n" +
+	"resourceId\x88\x01\x01\x12(\n" +
+	"\rcontext_token\x18\t \x01(\tH\x03R\fcontextToken\x88\x01\x01\x126\n" +
 	"\x04mode\x18\n" +
-	" \x01(\x0e2\x1b.dynax.access.v1.Mode.ValueH\x04R\x04mode\x88\x01\x01B\x0e\n" +
+	" \x01(\x0e2\x1d.sensive.access.v1.Mode.ValueH\x04R\x04mode\x88\x01\x01B\x0e\n" +
 	"\f_applicationB\f\n" +
 	"\n" +
 	"_operationB\x0e\n" +
-	"\f_resource_idB\x16\n" +
-	"\x14_justification_tokenB\a\n" +
-	"\x05_mode\"\xa3\x01\n" +
-	"\x13AccessCheckResponse\x12B\n" +
-	"\x06result\x18\x01 \x01(\x0e2%.dynax.access.v1.AccessDecision.ValueH\x00R\x06result\x88\x01\x01\x12*\n" +
+	"\f_resource_idB\x10\n" +
+	"\x0e_context_tokenB\a\n" +
+	"\x05_mode\"\xa5\x01\n" +
+	"\x13AccessCheckResponse\x12D\n" +
+	"\x06result\x18\x01 \x01(\x0e2'.sensive.access.v1.AccessDecision.ValueH\x00R\x06result\x88\x01\x01\x12*\n" +
 	"\x0edecision_token\x18\x02 \x01(\tH\x01R\rdecisionToken\x88\x01\x01B\t\n" +
 	"\a_resultB\x11\n" +
 	"\x0f_decision_token\"<\n" +
@@ -644,46 +644,46 @@ const file_dynax_access_v1_access_proto_rawDesc = "" +
 	"\x05error\x18\x01 \x01(\tH\x00R\x05error\x88\x01\x01\x12\x17\n" +
 	"\x04code\x18\x02 \x01(\tH\x01R\x04code\x88\x01\x01B\b\n" +
 	"\x06_errorB\a\n" +
-	"\x05_code2p\n" +
-	"\x14AuthorizationService\x12X\n" +
-	"\vCheckAccess\x12#.dynax.access.v1.AccessCheckRequest\x1a$.dynax.access.v1.AccessCheckResponseBFZDgithub.com/sensive-ai/sensive-go/client/gen/dynax/access/v1;accessv1b\x06proto3"
+	"\x05_code2t\n" +
+	"\x14AuthorizationService\x12\\\n" +
+	"\vCheckAccess\x12%.sensive.access.v1.AccessCheckRequest\x1a&.sensive.access.v1.AccessCheckResponseBHZFgithub.com/sensive-ai/sensive-go/client/gen/sensive/access/v1;accessv1b\x06proto3"
 
 var (
-	file_dynax_access_v1_access_proto_rawDescOnce sync.Once
-	file_dynax_access_v1_access_proto_rawDescData []byte
+	file_sensive_access_v1_access_proto_rawDescOnce sync.Once
+	file_sensive_access_v1_access_proto_rawDescData []byte
 )
 
-func file_dynax_access_v1_access_proto_rawDescGZIP() []byte {
-	file_dynax_access_v1_access_proto_rawDescOnce.Do(func() {
-		file_dynax_access_v1_access_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_dynax_access_v1_access_proto_rawDesc), len(file_dynax_access_v1_access_proto_rawDesc)))
+func file_sensive_access_v1_access_proto_rawDescGZIP() []byte {
+	file_sensive_access_v1_access_proto_rawDescOnce.Do(func() {
+		file_sensive_access_v1_access_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_sensive_access_v1_access_proto_rawDesc), len(file_sensive_access_v1_access_proto_rawDesc)))
 	})
-	return file_dynax_access_v1_access_proto_rawDescData
+	return file_sensive_access_v1_access_proto_rawDescData
 }
 
-var file_dynax_access_v1_access_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_dynax_access_v1_access_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
-var file_dynax_access_v1_access_proto_goTypes = []any{
-	(Mode_Value)(0),                  // 0: dynax.access.v1.Mode.Value
-	(AccessDecision_Value)(0),        // 1: dynax.access.v1.AccessDecision.Value
-	(*AccessCheckRequest)(nil),       // 2: dynax.access.v1.AccessCheckRequest
-	(*AccessCheckResponse)(nil),      // 3: dynax.access.v1.AccessCheckResponse
-	(*Mode)(nil),                     // 4: dynax.access.v1.Mode
-	(*AccessDecision)(nil),           // 5: dynax.access.v1.AccessDecision
-	(*Principal)(nil),                // 6: dynax.access.v1.Principal
-	(*Owner)(nil),                    // 7: dynax.access.v1.Owner
-	(*ErrorResponse)(nil),            // 8: dynax.access.v1.ErrorResponse
+var file_sensive_access_v1_access_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_sensive_access_v1_access_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_sensive_access_v1_access_proto_goTypes = []any{
+	(Mode_Value)(0),                  // 0: sensive.access.v1.Mode.Value
+	(AccessDecision_Value)(0),        // 1: sensive.access.v1.AccessDecision.Value
+	(*AccessCheckRequest)(nil),       // 2: sensive.access.v1.AccessCheckRequest
+	(*AccessCheckResponse)(nil),      // 3: sensive.access.v1.AccessCheckResponse
+	(*Mode)(nil),                     // 4: sensive.access.v1.Mode
+	(*AccessDecision)(nil),           // 5: sensive.access.v1.AccessDecision
+	(*Principal)(nil),                // 6: sensive.access.v1.Principal
+	(*Owner)(nil),                    // 7: sensive.access.v1.Owner
+	(*ErrorResponse)(nil),            // 8: sensive.access.v1.ErrorResponse
 	(*v1.CapabilityDescriptors)(nil), // 9: sensive.taxonomy.v1.CapabilityDescriptors
 	(*v1.UsageDescriptors)(nil),      // 10: sensive.taxonomy.v1.UsageDescriptors
 }
-var file_dynax_access_v1_access_proto_depIdxs = []int32{
-	6,  // 0: dynax.access.v1.AccessCheckRequest.principal:type_name -> dynax.access.v1.Principal
-	9,  // 1: dynax.access.v1.AccessCheckRequest.capability:type_name -> sensive.taxonomy.v1.CapabilityDescriptors
-	10, // 2: dynax.access.v1.AccessCheckRequest.usage:type_name -> sensive.taxonomy.v1.UsageDescriptors
-	7,  // 3: dynax.access.v1.AccessCheckRequest.owner:type_name -> dynax.access.v1.Owner
-	0,  // 4: dynax.access.v1.AccessCheckRequest.mode:type_name -> dynax.access.v1.Mode.Value
-	1,  // 5: dynax.access.v1.AccessCheckResponse.result:type_name -> dynax.access.v1.AccessDecision.Value
-	2,  // 6: dynax.access.v1.AuthorizationService.CheckAccess:input_type -> dynax.access.v1.AccessCheckRequest
-	3,  // 7: dynax.access.v1.AuthorizationService.CheckAccess:output_type -> dynax.access.v1.AccessCheckResponse
+var file_sensive_access_v1_access_proto_depIdxs = []int32{
+	6,  // 0: sensive.access.v1.AccessCheckRequest.principal:type_name -> sensive.access.v1.Principal
+	9,  // 1: sensive.access.v1.AccessCheckRequest.capability:type_name -> sensive.taxonomy.v1.CapabilityDescriptors
+	10, // 2: sensive.access.v1.AccessCheckRequest.usage:type_name -> sensive.taxonomy.v1.UsageDescriptors
+	7,  // 3: sensive.access.v1.AccessCheckRequest.owner:type_name -> sensive.access.v1.Owner
+	0,  // 4: sensive.access.v1.AccessCheckRequest.mode:type_name -> sensive.access.v1.Mode.Value
+	1,  // 5: sensive.access.v1.AccessCheckResponse.result:type_name -> sensive.access.v1.AccessDecision.Value
+	2,  // 6: sensive.access.v1.AuthorizationService.CheckAccess:input_type -> sensive.access.v1.AccessCheckRequest
+	3,  // 7: sensive.access.v1.AuthorizationService.CheckAccess:output_type -> sensive.access.v1.AccessCheckResponse
 	7,  // [7:8] is the sub-list for method output_type
 	6,  // [6:7] is the sub-list for method input_type
 	6,  // [6:6] is the sub-list for extension type_name
@@ -691,32 +691,32 @@ var file_dynax_access_v1_access_proto_depIdxs = []int32{
 	0,  // [0:6] is the sub-list for field type_name
 }
 
-func init() { file_dynax_access_v1_access_proto_init() }
-func file_dynax_access_v1_access_proto_init() {
-	if File_dynax_access_v1_access_proto != nil {
+func init() { file_sensive_access_v1_access_proto_init() }
+func file_sensive_access_v1_access_proto_init() {
+	if File_sensive_access_v1_access_proto != nil {
 		return
 	}
-	file_dynax_access_v1_access_proto_msgTypes[0].OneofWrappers = []any{}
-	file_dynax_access_v1_access_proto_msgTypes[1].OneofWrappers = []any{}
-	file_dynax_access_v1_access_proto_msgTypes[4].OneofWrappers = []any{}
-	file_dynax_access_v1_access_proto_msgTypes[5].OneofWrappers = []any{}
-	file_dynax_access_v1_access_proto_msgTypes[6].OneofWrappers = []any{}
+	file_sensive_access_v1_access_proto_msgTypes[0].OneofWrappers = []any{}
+	file_sensive_access_v1_access_proto_msgTypes[1].OneofWrappers = []any{}
+	file_sensive_access_v1_access_proto_msgTypes[4].OneofWrappers = []any{}
+	file_sensive_access_v1_access_proto_msgTypes[5].OneofWrappers = []any{}
+	file_sensive_access_v1_access_proto_msgTypes[6].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_dynax_access_v1_access_proto_rawDesc), len(file_dynax_access_v1_access_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_sensive_access_v1_access_proto_rawDesc), len(file_sensive_access_v1_access_proto_rawDesc)),
 			NumEnums:      2,
 			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_dynax_access_v1_access_proto_goTypes,
-		DependencyIndexes: file_dynax_access_v1_access_proto_depIdxs,
-		EnumInfos:         file_dynax_access_v1_access_proto_enumTypes,
-		MessageInfos:      file_dynax_access_v1_access_proto_msgTypes,
+		GoTypes:           file_sensive_access_v1_access_proto_goTypes,
+		DependencyIndexes: file_sensive_access_v1_access_proto_depIdxs,
+		EnumInfos:         file_sensive_access_v1_access_proto_enumTypes,
+		MessageInfos:      file_sensive_access_v1_access_proto_msgTypes,
 	}.Build()
-	File_dynax_access_v1_access_proto = out.File
-	file_dynax_access_v1_access_proto_goTypes = nil
-	file_dynax_access_v1_access_proto_depIdxs = nil
+	File_sensive_access_v1_access_proto = out.File
+	file_sensive_access_v1_access_proto_goTypes = nil
+	file_sensive_access_v1_access_proto_depIdxs = nil
 }

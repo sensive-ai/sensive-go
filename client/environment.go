@@ -26,7 +26,7 @@ import (
 	taxonomyv1 "github.com/sensive-ai/sensive-go/client/gen/sensive/taxonomy/v1"
 )
 
-// Mode is what the client does with a check: DYNAX_MODE.
+// Mode is what the client does with a check: SENSIVE_MODE.
 type Mode string
 
 const (
@@ -40,11 +40,10 @@ const (
 
 // The variables every Sensive SDK reads (README.md, "Configuration").
 const (
-	envDACURL      = "DYNAX_DAC_URL"
-	envSDKKey      = "DYNAX_SDK_KEY"
-	envEnvironment = "DYNAX_ENVIRONMENT"
-	envTimeout     = "DYNAX_TIMEOUT_MS"
-	envMode        = "DYNAX_MODE"
+	envDACURL      = "SENSIVE_DAC_URL"
+	envEnvironment = "SENSIVE_ENVIRONMENT"
+	envTimeout     = "SENSIVE_TIMEOUT_MS"
+	envMode        = "SENSIVE_MODE"
 )
 
 const defaultTimeout = 5000 * time.Millisecond
@@ -57,7 +56,7 @@ type ConfigError struct {
 }
 
 func (e *ConfigError) Error() string {
-	return fmt.Sprintf("dynax: %s %s", e.Variable, e.Problem)
+	return fmt.Sprintf("sensive: %s %s", e.Variable, e.Problem)
 }
 
 // settings is what the client reads from the environment. In DISABLED
@@ -67,7 +66,6 @@ type settings struct {
 	dacURL      string
 	target      string // the URL's host and port, which gRPC calls
 	secure      bool   // whether the URL asks for TLS
-	sdkKey      string // empty: a check carries no key
 	environment taxonomyv1.Environment_Value
 	timeout     time.Duration
 }
@@ -106,8 +104,6 @@ func settingsFrom(lookup func(string) (string, bool)) (settings, error) {
 		return refuse(envDACURL, "is %q: %v", s.dacURL, err)
 	}
 	s.target, s.secure = target, secure
-
-	s.sdkKey = value(envSDKKey)
 
 	s.environment = taxonomyv1.Environment_PRODUCTION_DATA
 	switch v := value(envEnvironment); v {
@@ -170,7 +166,6 @@ func targetOf(checkerURL string) (target string, secure bool, err error) {
 
 // logAttrs is what the client logs once it is configured: the mode, and
 // unless it is DISABLED, the checker, the environment and the timeout.
-// Never the key.
 func (s settings) logAttrs() []any {
 	if s.mode == ModeDisabled {
 		return []any{slog.String("mode", string(s.mode))}

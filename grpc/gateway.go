@@ -22,18 +22,18 @@ import "strings"
 type headerMatcher = func(key string) (string, bool)
 
 // IncomingHeaderMatcher wraps a gateway's incoming header matcher so the
-// justification header reaches the service as the metadata key the
+// context token header reaches the service as the metadata key the
 // interceptor reads, unrenamed; every other header is left to next. A
 // translator that renames headers by default, as grpc-gateway does, would
-// otherwise hand the service `grpcgateway-dynax-justification-token`.
+// otherwise hand the service `grpcgateway-sensive-context-token`.
 //
 //	runtime.WithIncomingHeaderMatcher(sensivegrpc.IncomingHeaderMatcher(runtime.DefaultHeaderMatcher))
 func IncomingHeaderMatcher(next func(key string) (string, bool)) func(key string) (string, bool) {
-	return wrap(JustificationTokenKey, next)
+	return wrap(ContextTokenKey, next)
 }
 
 // OutgoingHeaderMatcher wraps a gateway's outgoing header matcher so the
-// decision token reaches the client as the `dynax-decision-token` response
+// decision token reaches the client as the `sensive-decision-token` response
 // header, unrenamed, on allow and, through the gateway's error handler, on
 // deny; every other key is left to next. grpc-gateway's default error
 // handler forwards header metadata through this matcher and answers
@@ -44,10 +44,10 @@ func OutgoingHeaderMatcher(next func(key string) (string, bool)) func(key string
 	return wrap(DecisionTokenKey, next)
 }
 
-func wrap(dynaxKey string, next headerMatcher) headerMatcher {
+func wrap(tokenKey string, next headerMatcher) headerMatcher {
 	return func(key string) (string, bool) {
-		if strings.EqualFold(key, dynaxKey) {
-			return dynaxKey, true
+		if strings.EqualFold(key, tokenKey) {
+			return tokenKey, true
 		}
 		if next == nil {
 			return "", false

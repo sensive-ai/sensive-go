@@ -26,7 +26,7 @@ Then follow that module's README, which walks you through setting it up.
 The gRPC module is built on the client and brings it with it.
 
 You'll need your deployment's checker URL. The SDK reads it from the
-environment, as `DYNAX_DAC_URL`, and each module's README lists every
+environment, as `SENSIVE_DAC_URL`, and each module's README lists every
 setting.
 
 ## Versions

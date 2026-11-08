@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	sensiveclient "github.com/sensive-ai/sensive-go/client"
-	accessv1 "github.com/sensive-ai/sensive-go/client/gen/dynax/access/v1"
+	accessv1 "github.com/sensive-ai/sensive-go/client/gen/sensive/access/v1"
 	conformancev1 "github.com/sensive-ai/sensive-go/grpc/internal/conformancepb/conformance/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -55,7 +55,7 @@ func (f *fakeChecker) CheckAccess(_ context.Context, req *accessv1.AccessCheckRe
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.requests = append(f.requests, req)
-	f.tokens = append(f.tokens, req.GetJustificationToken())
+	f.tokens = append(f.tokens, req.GetContextToken())
 	switch {
 	case f.notEnforced:
 		return notEnforced
@@ -207,7 +207,7 @@ func asWorkforce(ctx context.Context, email string) context.Context {
 
 func TestAllowReachesTheHandlerWithTheDecisionToken(t *testing.T) {
 	h := newHarness(t, Config{})
-	ctx := metadata.AppendToOutgoingContext(asWorkforce(context.Background(), "agent@example.com"), JustificationTokenKey, "eyJ.jwe")
+	ctx := metadata.AppendToOutgoingContext(asWorkforce(context.Background(), "agent@example.com"), ContextTokenKey, "eyJ.jwe")
 
 	var header metadata.MD
 	resp, err := h.client.ListTransactions(ctx, &conformancev1.ListTransactionsRequest{AccountId: "acct-1"}, grpc.Header(&header))
@@ -230,7 +230,7 @@ func TestAllowReachesTheHandlerWithTheDecisionToken(t *testing.T) {
 		t.Errorf("request to the checker = %+v", req)
 	}
 	if h.checker.tokens[0] != "eyJ.jwe" {
-		t.Errorf("justification token passed = %q", h.checker.tokens[0])
+		t.Errorf("context token passed = %q", h.checker.tokens[0])
 	}
 }
 
@@ -535,9 +535,8 @@ func TestNewRequiresAResolver(t *testing.T) {
 }
 
 func TestFromEnv(t *testing.T) {
-	t.Setenv("DYNAX_DAC_URL", "https://dac.example.com/api/dac")
-	t.Setenv("DYNAX_SDK_KEY", "key")
-	t.Setenv("DYNAX_MODE", "")
+	t.Setenv("SENSIVE_DAC_URL", "https://dac.example.com/api/dac")
+	t.Setenv("SENSIVE_MODE", "")
 	gate, err := FromEnv(workforce, OwnerLookup(lookupByAccount))
 	if err != nil {
 		t.Fatalf("FromEnv: %v", err)
@@ -547,41 +546,40 @@ func TestFromEnv(t *testing.T) {
 	}
 
 	// The client reads the environment, and its refusal names the variable.
-	t.Setenv("DYNAX_MODE", "OFF")
+	t.Setenv("SENSIVE_MODE", "OFF")
 	var refused *sensiveclient.ConfigError
-	if _, err := FromEnv(workforce); !errors.As(err, &refused) || refused.Variable != "DYNAX_MODE" {
-		t.Errorf("err = %v, want the client's refusal of DYNAX_MODE", err)
+	if _, err := FromEnv(workforce); !errors.As(err, &refused) || refused.Variable != "SENSIVE_MODE" {
+		t.Errorf("err = %v, want the client's refusal of SENSIVE_MODE", err)
 	}
 
 	// DISABLED reads nothing else.
-	t.Setenv("DYNAX_MODE", "DISABLED")
-	t.Setenv("DYNAX_DAC_URL", "")
-	t.Setenv("DYNAX_SDK_KEY", "")
+	t.Setenv("SENSIVE_MODE", "DISABLED")
+	t.Setenv("SENSIVE_DAC_URL", "")
 	if _, err := FromEnv(workforce); err != nil {
 		t.Errorf("DISABLED without the checker's settings: %v", err)
 	}
 }
 
-func TestClientInterceptorPropagatesTheJustification(t *testing.T) {
+func TestClientInterceptorPropagatesTheContextToken(t *testing.T) {
 	// A call arrives at a first hop carrying the token; the hop calls a
 	// second service through the client interceptor, which must carry it on.
-	incoming := metadata.NewIncomingContext(context.Background(), metadata.Pairs(JustificationTokenKey, "eyJ.jwe"))
+	incoming := metadata.NewIncomingContext(context.Background(), metadata.Pairs(ContextTokenKey, "eyJ.jwe"))
 	out := propagate(incoming)
 	md, _ := metadata.FromOutgoingContext(out)
-	if got := md.Get(JustificationTokenKey); len(got) != 1 || got[0] != "eyJ.jwe" {
+	if got := md.Get(ContextTokenKey); len(got) != 1 || got[0] != "eyJ.jwe" {
 		t.Errorf("propagated token = %v", got)
 	}
 
 	// A token the caller set itself wins.
-	already := metadata.AppendToOutgoingContext(incoming, JustificationTokenKey, "mine")
+	already := metadata.AppendToOutgoingContext(incoming, ContextTokenKey, "mine")
 	md, _ = metadata.FromOutgoingContext(propagate(already))
-	if got := md.Get(JustificationTokenKey); len(got) != 1 || got[0] != "mine" {
+	if got := md.Get(ContextTokenKey); len(got) != 1 || got[0] != "mine" {
 		t.Errorf("token = %v, want the caller's own", got)
 	}
 
 	// No incoming token: nothing is added.
 	md, ok := metadata.FromOutgoingContext(propagate(context.Background()))
-	if ok && len(md.Get(JustificationTokenKey)) > 0 {
+	if ok && len(md.Get(ContextTokenKey)) > 0 {
 		t.Errorf("a token appeared from nowhere: %v", md)
 	}
 
@@ -704,7 +702,7 @@ func TestCloseClosesOnlyAClientTheInterceptorBuilt(t *testing.T) {
 		t.Errorf("an interceptor given a client claims it: %+v", given.own)
 	}
 
-	t.Setenv("DYNAX_MODE", "DISABLED")
+	t.Setenv("SENSIVE_MODE", "DISABLED")
 	built, err := New(Config{PrincipalResolver: workforce})
 	if err != nil {
 		t.Fatal(err)
@@ -717,9 +715,9 @@ func TestCloseClosesOnlyAClientTheInterceptorBuilt(t *testing.T) {
 	}
 }
 
-func TestStreamClientInterceptorPropagatesTheJustification(t *testing.T) {
+func TestStreamClientInterceptorPropagatesTheContextToken(t *testing.T) {
 	h := newHarness(t, Config{})
-	incoming := metadata.NewIncomingContext(context.Background(), metadata.Pairs(JustificationTokenKey, "eyJ.stream"))
+	incoming := metadata.NewIncomingContext(context.Background(), metadata.Pairs(ContextTokenKey, "eyJ.stream"))
 	client := conformancev1.NewLedgerClient(dial(t, h, grpc.WithStreamInterceptor(StreamClient())))
 
 	stream, err := client.Tail(asWorkforce(incoming, "agent@example.com"), &conformancev1.TailRequest{})
@@ -741,7 +739,7 @@ func TestDenialIgnoresOtherErrors(t *testing.T) {
 		"a PermissionDenied from elsewhere": status.Error(codes.PermissionDenied, "not ours"),
 	} {
 		if reason, token, ok := Denial(err); ok || reason != "" || token != "" {
-			t.Errorf("%s: Denial = (%q, %q, %v), want not a Dynax denial", name, reason, token, ok)
+			t.Errorf("%s: Denial = (%q, %q, %v), want not a Sensive denial", name, reason, token, ok)
 		}
 	}
 }

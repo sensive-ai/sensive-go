@@ -21,11 +21,10 @@ The client reads its settings from the environment, and only from it:
 
 | Variable | What it is | Default |
 |---|---|---|
-| `DYNAX_DAC_URL` | The Dynamic Access Checker's URL | Required |
-| `DYNAX_SDK_KEY` | The deployment's API key, sent as a bearer token on every check when set | None: a check carries no key |
-| `DYNAX_ENVIRONMENT` | `PRODUCTION_DATA` or `TEST_DATA`: whether this deployment serves real data | `PRODUCTION_DATA` |
-| `DYNAX_TIMEOUT_MS` | How long one check may take, in milliseconds | `5000` |
-| `DYNAX_MODE` | `ENFORCED`, `LOG_ONLY` or `DISABLED` | `ENFORCED` |
+| `SENSIVE_DAC_URL` | The Dynamic Access Checker's URL | Required |
+| `SENSIVE_ENVIRONMENT` | `PRODUCTION_DATA` or `TEST_DATA`: whether this deployment serves real data | `PRODUCTION_DATA` |
+| `SENSIVE_TIMEOUT_MS` | How long one check may take, in milliseconds | `5000` |
+| `SENSIVE_MODE` | `ENFORCED`, `LOG_ONLY` or `DISABLED` | `ENFORCED` |
 
 Values are trimmed, an empty value counts as unset, and a value from a
 list is spelled exactly as shown. In `DISABLED` mode no other variable is
@@ -39,10 +38,9 @@ if err != nil {
 defer client.Close()
 ```
 
-`FromEnv` logs once what it read, never the key. It takes gRPC dial
-options for the connection only, such as a private certificate authority,
-interceptors or keepalive; they never change where the client connects or
-with which key. Build one client at startup and share it: it is safe for
+`FromEnv` logs once what it read. It takes gRPC dial options for the
+connection only, such as a private certificate authority, interceptors or
+keepalive; they never change where the client connects. Build one client at startup and share it: it is safe for
 concurrent use. `Close` waits for the `LOG_ONLY` checks still in flight and
 closes the connection.
 
@@ -51,7 +49,7 @@ closes the connection.
 ```go
 import (
     sensiveclient "github.com/sensive-ai/sensive-go/client"
-    accessv1 "github.com/sensive-ai/sensive-go/client/gen/dynax/access/v1"
+    accessv1 "github.com/sensive-ai/sensive-go/client/gen/sensive/access/v1"
     taxonomyv1 "github.com/sensive-ai/sensive-go/client/gen/sensive/taxonomy/v1"
     "google.golang.org/protobuf/proto"
 )
@@ -69,8 +67,8 @@ result := client.CheckAccess(ctx, &accessv1.AccessCheckRequest{
         Subjects:      []taxonomyv1.Subject_Value{taxonomyv1.Subject_USER},
         SourceDetails: []taxonomyv1.SourceDetail_Value{taxonomyv1.SourceDetail_USER},
     },
-    Owner:              sensiveclient.OwnerID("cust_123"),
-    JustificationToken: proto.String(justificationToken),
+    Owner:        sensiveclient.OwnerID("cust_123"),
+    ContextToken: proto.String(contextToken),
 })
 
 if !result.Allowed() {
@@ -89,12 +87,12 @@ if !result.Allowed() {
 | `Usage` | How your organization uses the operation: whose data it is (`Subjects`, required) and, when the data comes from your application's users, which of their data (`SourceDetails`) |
 | `Owner` | The customer whose data the request touches, when it names one: `sensiveclient.OwnerID(id)` or `sensiveclient.OwnerEmail(email)`, with both fields set when you know both |
 | `ResourceId` | The specific resource the request touches, when it names one |
-| `JustificationToken` | The justification the caller sent, in the `dynax-justification-token` header; unset when there is none |
+| `ContextToken` | The context token the caller sent, in the `sensive-context-token` header; unset when there is none |
 
 Every taxonomy value is defined by its comment in
 `proto/sensive/taxonomy/v1/taxonomy.proto`. In Go a value is named for its
 type and itself: `APPLICATION_USER` is `taxonomyv1.Source_APPLICATION_USER`.
-The client sets the environment from `DYNAX_ENVIRONMENT`, and the mode,
+The client sets the environment from `SENSIVE_ENVIRONMENT`, and the mode,
 on every check, whatever the request carries.
 
 ## Modes and results
@@ -126,7 +124,7 @@ failed.
 
 ## Testing
 
-Run tests with `DYNAX_MODE=DISABLED` and every check is `ALLOW`, with no
+Run tests with `SENSIVE_MODE=DISABLED` and every check is `ALLOW`, with no
 checker. Code that takes a `sensiveclient.AccessChecker`, the two methods
 `CheckAccess` and `Failed`, can be given a stand-in that returns the
 `sensiveclient.Result` a test needs.

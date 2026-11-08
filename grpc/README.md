@@ -19,7 +19,7 @@ import (
     // The client: OwnerID and OwnerEmail, and a Checker of your own.
     sensiveclient "github.com/sensive-ai/sensive-go/client"
     // The request types: the Owner an owner lookup returns.
-    accessv1 "github.com/sensive-ai/sensive-go/client/gen/dynax/access/v1"
+    accessv1 "github.com/sensive-ai/sensive-go/client/gen/sensive/access/v1"
 )
 ```
 
@@ -38,9 +38,9 @@ import (
   turns that key into the owner, so policies can take into account whose
   data it is.
 - **Two tokens travel as metadata.** A caller who has justified their
-  access sends a justification token in `dynax-justification-token`. A
+  access sends a context token in `sensive-context-token`. A
   response the checker decided carries its signed decision token in
-  `dynax-decision-token`, allowed or denied.
+  `sensive-decision-token`, allowed or denied.
 - **The mode decides what a decision does.** In `ENFORCED` mode the
   checker's decision stands. In `LOG_ONLY` mode every call proceeds and the
   checker records what it would have decided. In `DISABLED` mode nothing
@@ -213,7 +213,7 @@ if err := gate.Verify(server); err != nil {
   resolve it and every resolver you registered is used, and that no
   streaming method declares an owner. It returns every problem, joined,
   and logs one line of coverage naming the methods that are not gated:
-  `dynax_coverage gated=N ungated=M ungated_methods=[...]`.
+  `sensive_coverage gated=N ungated=M ungated_methods=[...]`.
 - **`Close`**, once the server has stopped, closes the client the
   interceptors built, first sending the `LOG_ONLY` checks still in flight.
 - **`New(cfg, opts...)`** is `FromEnv` with a `Config`: the resolver, a
@@ -227,16 +227,15 @@ The client reads its settings from the environment, and only from it:
 
 | Variable | What it is | Default |
 |---|---|---|
-| `DYNAX_DAC_URL` | The Dynamic Access Checker's URL | Required |
-| `DYNAX_SDK_KEY` | The deployment's API key, sent on every check when set | None: a check carries no key |
-| `DYNAX_ENVIRONMENT` | `PRODUCTION_DATA` or `TEST_DATA`: whether this deployment serves real data | `PRODUCTION_DATA` |
-| `DYNAX_TIMEOUT_MS` | How long one check may take, in milliseconds | `5000` |
-| `DYNAX_MODE` | `ENFORCED`, `LOG_ONLY` or `DISABLED` | `ENFORCED` |
+| `SENSIVE_DAC_URL` | The Dynamic Access Checker's URL | Required |
+| `SENSIVE_ENVIRONMENT` | `PRODUCTION_DATA` or `TEST_DATA`: whether this deployment serves real data | `PRODUCTION_DATA` |
+| `SENSIVE_TIMEOUT_MS` | How long one check may take, in milliseconds | `5000` |
+| `SENSIVE_MODE` | `ENFORCED`, `LOG_ONLY` or `DISABLED` | `ENFORCED` |
 
 Values are trimmed, an empty value counts as unset, and a value from a
 list is spelled exactly as shown. In `DISABLED` mode no other variable is
 read. `FromEnv` returns a `*sensiveclient.ConfigError` naming any variable it
-cannot read, and logs once what it read, never the key.
+cannot read, and logs once what it read.
 
 To introduce Sensive to a running service, start in `LOG_ONLY` mode: every
 call proceeds without waiting on the checker, and the access log shows
@@ -259,7 +258,7 @@ method whose annotation is invalid. A panic in your owner code never
 crashes the server.
 
 A denial's status carries an `errdetails.ErrorInfo` in the domain
-`dynax.co` with the reason and, for `ACCESS_DENIED`, the decision token,
+`sensive.ai` with the reason and, for `ACCESS_DENIED`, the decision token,
 so the token survives a chain of callers. `sensivegrpc.Denial(err)` reads
 them back:
 
@@ -297,7 +296,7 @@ shape it takes.
 Sensive checks at the service a person calls, and the calls that service
 makes in turn run under its own authority, so they need nothing. Only a
 connection that forwards the caller's identity to a service that checks
-it too takes the client interceptors, so the justification travels with
+it too takes the client interceptors, so the context token travels with
 the identity:
 
 ```go
@@ -308,7 +307,7 @@ conn, err := grpc.NewClient(target,
 
 ## Testing
 
-Run tests with `DYNAX_MODE=DISABLED` and every call reaches its handler
+Run tests with `SENSIVE_MODE=DISABLED` and every call reaches its handler
 with no checker. To test the gating itself, pass a stand-in as
 `Config.Checker`: anything with the `sensiveclient.AccessChecker` methods,
 `CheckAccess` returning the `sensiveclient.Result` you want and `Failed` returning

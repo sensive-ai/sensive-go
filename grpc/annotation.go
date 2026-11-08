@@ -20,7 +20,7 @@ import (
 	"slices"
 	"strings"
 
-	accessv1 "github.com/sensive-ai/sensive-go/client/gen/dynax/access/v1"
+	accessv1 "github.com/sensive-ai/sensive-go/client/gen/sensive/access/v1"
 	taxonomyv1 "github.com/sensive-ai/sensive-go/client/gen/sensive/taxonomy/v1"
 	sensivev1 "github.com/sensive-ai/sensive-go/grpc/gen/sensive/v1"
 	"google.golang.org/protobuf/proto"
@@ -31,13 +31,13 @@ import (
 // Metadata keys the runtime reads and writes, the gRPC spelling of the
 // headers the HTTP SDKs use.
 const (
-	// JustificationTokenKey carries the caller's justification token, the
-	// JWE a Sensive provider minted, into a call and from hop to hop.
-	JustificationTokenKey = "dynax-justification-token"
+	// ContextTokenKey carries the caller's context token, opaque to the
+	// service, into a call and from hop to hop.
+	ContextTokenKey = "sensive-context-token"
 	// DecisionTokenKey carries the checker's signed decision token back as
 	// response header metadata, on allow and deny alike, so a client can
 	// tell "checked" from "no Sensive coverage".
-	DecisionTokenKey = "dynax-decision-token"
+	DecisionTokenKey = "sensive-decision-token"
 )
 
 // Annotation is what a method's Sensive options say, validated: everything
@@ -78,7 +78,7 @@ type Annotation struct {
 
 // Request is the access check for one call of the annotated method: the
 // actor's policy email and the owner the resolver found, if any. The
-// client adds the environment, from DYNAX_ENVIRONMENT.
+// client adds the environment, from SENSIVE_ENVIRONMENT.
 func (a *Annotation) Request(email string, owner *accessv1.Owner) *accessv1.AccessCheckRequest {
 	return &accessv1.AccessCheckRequest{
 		Principal:   &accessv1.Principal{Email: proto.String(email)},
@@ -106,11 +106,11 @@ func Lookup(fullMethod string) (*Annotation, error) {
 		return nil, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("dynax: %s: %w", fullMethod, err)
+		return nil, fmt.Errorf("sensive: %s: %w", fullMethod, err)
 	}
 	method, ok := desc.(protoreflect.MethodDescriptor)
 	if !ok {
-		return nil, fmt.Errorf("dynax: %s names a %T, not a method", fullMethod, desc)
+		return nil, fmt.Errorf("sensive: %s names a %T, not a method", fullMethod, desc)
 	}
 	return annotationOf(method)
 }
@@ -136,7 +136,7 @@ func annotationOf(method protoreflect.MethodDescriptor) (*Annotation, error) {
 	op, _ := proto.GetExtension(methodOpts, sensivev1.E_Operation).(*sensivev1.Operation)
 	full := grpcMethodOf(method)
 	fail := func(format string, args ...any) error {
-		return fmt.Errorf("dynax: %s: %s", full, fmt.Sprintf(format, args...))
+		return fmt.Errorf("sensive: %s: %s", full, fmt.Sprintf(format, args...))
 	}
 
 	ann := &Annotation{

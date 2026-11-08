@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	sensiveclient "github.com/sensive-ai/sensive-go/client"
-	accessv1 "github.com/sensive-ai/sensive-go/client/gen/dynax/access/v1"
+	accessv1 "github.com/sensive-ai/sensive-go/client/gen/sensive/access/v1"
 	conformancev1 "github.com/sensive-ai/sensive-go/grpc/internal/conformancepb/conformance/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

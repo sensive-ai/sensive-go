@@ -4,13 +4,11 @@
     {
       "name": "only the required variables: every default applies",
       "env": {
-        "DYNAX_DAC_URL": "https://dac.example.com/api/dac",
-        "DYNAX_SDK_KEY": "key"
+        "SENSIVE_DAC_URL": "https://dac.example.com/api/dac"
       },
       "settings": {
         "mode": "ENFORCED",
         "dac_url": "https://dac.example.com/api/dac",
-        "sdk_key": "key",
         "environment": "PRODUCTION_DATA",
         "timeout_ms": 5000
       }
@@ -18,16 +16,14 @@
     {
       "name": "every variable set",
       "env": {
-        "DYNAX_DAC_URL": "https://dac.example.com/api/dac",
-        "DYNAX_SDK_KEY": "key",
-        "DYNAX_ENVIRONMENT": "TEST_DATA",
-        "DYNAX_TIMEOUT_MS": "250",
-        "DYNAX_MODE": "LOG_ONLY"
+        "SENSIVE_DAC_URL": "https://dac.example.com/api/dac",
+        "SENSIVE_ENVIRONMENT": "TEST_DATA",
+        "SENSIVE_TIMEOUT_MS": "250",
+        "SENSIVE_MODE": "LOG_ONLY"
       },
       "settings": {
         "mode": "LOG_ONLY",
         "dac_url": "https://dac.example.com/api/dac",
-        "sdk_key": "key",
         "environment": "TEST_DATA",
         "timeout_ms": 250
       }
@@ -35,14 +31,12 @@
     {
       "name": "ENFORCED named explicitly",
       "env": {
-        "DYNAX_DAC_URL": "https://dac.example.com/api/dac",
-        "DYNAX_SDK_KEY": "key",
-        "DYNAX_MODE": "ENFORCED"
+        "SENSIVE_DAC_URL": "https://dac.example.com/api/dac",
+        "SENSIVE_MODE": "ENFORCED"
       },
       "settings": {
         "mode": "ENFORCED",
         "dac_url": "https://dac.example.com/api/dac",
-        "sdk_key": "key",
         "environment": "PRODUCTION_DATA",
         "timeout_ms": 5000
       }
@@ -50,13 +44,11 @@
     {
       "name": "http is accepted",
       "env": {
-        "DYNAX_DAC_URL": "http://localhost:3010/api/dac",
-        "DYNAX_SDK_KEY": "key"
+        "SENSIVE_DAC_URL": "http://localhost:3010/api/dac"
       },
       "settings": {
         "mode": "ENFORCED",
         "dac_url": "http://localhost:3010/api/dac",
-        "sdk_key": "key",
         "environment": "PRODUCTION_DATA",
         "timeout_ms": 5000
       }
@@ -64,16 +56,14 @@
     {
       "name": "values are trimmed",
       "env": {
-        "DYNAX_DAC_URL": "  https://dac.example.com/api/dac\n",
-        "DYNAX_SDK_KEY": "\tkey ",
-        "DYNAX_ENVIRONMENT": " TEST_DATA ",
-        "DYNAX_TIMEOUT_MS": " 250 ",
-        "DYNAX_MODE": " LOG_ONLY "
+        "SENSIVE_DAC_URL": "  https://dac.example.com/api/dac\n",
+        "SENSIVE_ENVIRONMENT": " TEST_DATA ",
+        "SENSIVE_TIMEOUT_MS": " 250 ",
+        "SENSIVE_MODE": " LOG_ONLY "
       },
       "settings": {
         "mode": "LOG_ONLY",
         "dac_url": "https://dac.example.com/api/dac",
-        "sdk_key": "key",
         "environment": "TEST_DATA",
         "timeout_ms": 250
       }
@@ -81,16 +71,14 @@
     {
       "name": "an empty value is unset, so the default applies",
       "env": {
-        "DYNAX_DAC_URL": "https://dac.example.com/api/dac",
-        "DYNAX_SDK_KEY": "key",
-        "DYNAX_ENVIRONMENT": "",
-        "DYNAX_TIMEOUT_MS": "   ",
-        "DYNAX_MODE": ""
+        "SENSIVE_DAC_URL": "https://dac.example.com/api/dac",
+        "SENSIVE_ENVIRONMENT": "",
+        "SENSIVE_TIMEOUT_MS": "   ",
+        "SENSIVE_MODE": ""
       },
       "settings": {
         "mode": "ENFORCED",
         "dac_url": "https://dac.example.com/api/dac",
-        "sdk_key": "key",
         "environment": "PRODUCTION_DATA",
         "timeout_ms": 5000
       }
@@ -98,7 +86,7 @@
     {
       "name": "DISABLED needs nothing else",
       "env": {
-        "DYNAX_MODE": "DISABLED"
+        "SENSIVE_MODE": "DISABLED"
       },
       "settings": {
         "mode": "DISABLED"
@@ -107,10 +95,10 @@
     {
       "name": "DISABLED reads nothing else, so invalid values do not matter",
       "env": {
-        "DYNAX_MODE": "DISABLED",
-        "DYNAX_DAC_URL": "ftp://dac.example.com",
-        "DYNAX_ENVIRONMENT": "STAGING",
-        "DYNAX_TIMEOUT_MS": "soon"
+        "SENSIVE_MODE": "DISABLED",
+        "SENSIVE_DAC_URL": "ftp://dac.example.com",
+        "SENSIVE_ENVIRONMENT": "STAGING",
+        "SENSIVE_TIMEOUT_MS": "soon"
       },
       "settings": {
         "mode": "DISABLED"
@@ -119,178 +107,135 @@
     {
       "name": "LOG_ONLY needs the URL",
       "env": {
-        "DYNAX_MODE": "LOG_ONLY",
-        "DYNAX_SDK_KEY": "key"
+        "SENSIVE_MODE": "LOG_ONLY"
       },
-      "refuses": "DYNAX_DAC_URL"
+      "refuses": "SENSIVE_DAC_URL"
     },
     {
       "name": "the URL is required",
-      "env": {
-        "DYNAX_SDK_KEY": "key"
-      },
-      "refuses": "DYNAX_DAC_URL"
+      "env": {},
+      "refuses": "SENSIVE_DAC_URL"
     },
     {
       "name": "a blank URL is unset",
       "env": {
-        "DYNAX_DAC_URL": "  ",
-        "DYNAX_SDK_KEY": "key"
+        "SENSIVE_DAC_URL": "  "
       },
-      "refuses": "DYNAX_DAC_URL"
-    },
-    {
-      "name": "the key is optional",
-      "env": {
-        "DYNAX_DAC_URL": "https://dac.example.com/api/dac"
-      },
-      "settings": {
-        "mode": "ENFORCED",
-        "dac_url": "https://dac.example.com/api/dac",
-        "environment": "PRODUCTION_DATA",
-        "timeout_ms": 5000
-      }
-    },
-    {
-      "name": "a blank key is unset",
-      "env": {
-        "DYNAX_DAC_URL": "https://dac.example.com/api/dac",
-        "DYNAX_SDK_KEY": " "
-      },
-      "settings": {
-        "mode": "ENFORCED",
-        "dac_url": "https://dac.example.com/api/dac",
-        "environment": "PRODUCTION_DATA",
-        "timeout_ms": 5000
-      }
+      "refuses": "SENSIVE_DAC_URL"
     },
     {
       "name": "a URL that is not https or http",
       "env": {
-        "DYNAX_DAC_URL": "ftp://dac.example.com/api/dac",
-        "DYNAX_SDK_KEY": "key"
+        "SENSIVE_DAC_URL": "ftp://dac.example.com/api/dac"
       },
-      "refuses": "DYNAX_DAC_URL"
+      "refuses": "SENSIVE_DAC_URL"
     },
     {
       "name": "a URL with no scheme",
       "env": {
-        "DYNAX_DAC_URL": "dac.example.com/api/dac",
-        "DYNAX_SDK_KEY": "key"
+        "SENSIVE_DAC_URL": "dac.example.com/api/dac"
       },
-      "refuses": "DYNAX_DAC_URL"
+      "refuses": "SENSIVE_DAC_URL"
     },
     {
       "name": "a URL with no host",
       "env": {
-        "DYNAX_DAC_URL": "https:///api/dac",
-        "DYNAX_SDK_KEY": "key"
+        "SENSIVE_DAC_URL": "https:///api/dac"
       },
-      "refuses": "DYNAX_DAC_URL"
+      "refuses": "SENSIVE_DAC_URL"
     },
     {
       "name": "the environment is spelled as listed, case included",
       "env": {
-        "DYNAX_DAC_URL": "https://dac.example.com/api/dac",
-        "DYNAX_SDK_KEY": "key",
-        "DYNAX_ENVIRONMENT": "test_data"
+        "SENSIVE_DAC_URL": "https://dac.example.com/api/dac",
+        "SENSIVE_ENVIRONMENT": "test_data"
       },
-      "refuses": "DYNAX_ENVIRONMENT"
+      "refuses": "SENSIVE_ENVIRONMENT"
     },
     {
       "name": "an environment that is not one of the two",
       "env": {
-        "DYNAX_DAC_URL": "https://dac.example.com/api/dac",
-        "DYNAX_SDK_KEY": "key",
-        "DYNAX_ENVIRONMENT": "STAGING"
+        "SENSIVE_DAC_URL": "https://dac.example.com/api/dac",
+        "SENSIVE_ENVIRONMENT": "STAGING"
       },
-      "refuses": "DYNAX_ENVIRONMENT"
+      "refuses": "SENSIVE_ENVIRONMENT"
     },
     {
       "name": "the mode is spelled as listed, case included",
       "env": {
-        "DYNAX_DAC_URL": "https://dac.example.com/api/dac",
-        "DYNAX_SDK_KEY": "key",
-        "DYNAX_MODE": "log_only"
+        "SENSIVE_DAC_URL": "https://dac.example.com/api/dac",
+        "SENSIVE_MODE": "log_only"
       },
-      "refuses": "DYNAX_MODE"
+      "refuses": "SENSIVE_MODE"
     },
     {
       "name": "a mode spelled with a dash",
       "env": {
-        "DYNAX_DAC_URL": "https://dac.example.com/api/dac",
-        "DYNAX_SDK_KEY": "key",
-        "DYNAX_MODE": "LOG-ONLY"
+        "SENSIVE_DAC_URL": "https://dac.example.com/api/dac",
+        "SENSIVE_MODE": "LOG-ONLY"
       },
-      "refuses": "DYNAX_MODE"
+      "refuses": "SENSIVE_MODE"
     },
     {
       "name": "a mode that is not one of the three",
       "env": {
-        "DYNAX_MODE": "OFF"
+        "SENSIVE_MODE": "OFF"
       },
-      "refuses": "DYNAX_MODE"
+      "refuses": "SENSIVE_MODE"
     },
     {
       "name": "a zero timeout",
       "env": {
-        "DYNAX_DAC_URL": "https://dac.example.com/api/dac",
-        "DYNAX_SDK_KEY": "key",
-        "DYNAX_TIMEOUT_MS": "0"
+        "SENSIVE_DAC_URL": "https://dac.example.com/api/dac",
+        "SENSIVE_TIMEOUT_MS": "0"
       },
-      "refuses": "DYNAX_TIMEOUT_MS"
+      "refuses": "SENSIVE_TIMEOUT_MS"
     },
     {
       "name": "a negative timeout",
       "env": {
-        "DYNAX_DAC_URL": "https://dac.example.com/api/dac",
-        "DYNAX_SDK_KEY": "key",
-        "DYNAX_TIMEOUT_MS": "-5"
+        "SENSIVE_DAC_URL": "https://dac.example.com/api/dac",
+        "SENSIVE_TIMEOUT_MS": "-5"
       },
-      "refuses": "DYNAX_TIMEOUT_MS"
+      "refuses": "SENSIVE_TIMEOUT_MS"
     },
     {
       "name": "a timeout that is not a whole number",
       "env": {
-        "DYNAX_DAC_URL": "https://dac.example.com/api/dac",
-        "DYNAX_SDK_KEY": "key",
-        "DYNAX_TIMEOUT_MS": "1.5"
+        "SENSIVE_DAC_URL": "https://dac.example.com/api/dac",
+        "SENSIVE_TIMEOUT_MS": "1.5"
       },
-      "refuses": "DYNAX_TIMEOUT_MS"
+      "refuses": "SENSIVE_TIMEOUT_MS"
     },
     {
       "name": "a timeout with a unit",
       "env": {
-        "DYNAX_DAC_URL": "https://dac.example.com/api/dac",
-        "DYNAX_SDK_KEY": "key",
-        "DYNAX_TIMEOUT_MS": "5s"
+        "SENSIVE_DAC_URL": "https://dac.example.com/api/dac",
+        "SENSIVE_TIMEOUT_MS": "5s"
       },
-      "refuses": "DYNAX_TIMEOUT_MS"
+      "refuses": "SENSIVE_TIMEOUT_MS"
     },
     {
       "name": "a timeout with a sign",
       "env": {
-        "DYNAX_DAC_URL": "https://dac.example.com/api/dac",
-        "DYNAX_SDK_KEY": "key",
-        "DYNAX_TIMEOUT_MS": "+250"
+        "SENSIVE_DAC_URL": "https://dac.example.com/api/dac",
+        "SENSIVE_TIMEOUT_MS": "+250"
       },
-      "refuses": "DYNAX_TIMEOUT_MS"
+      "refuses": "SENSIVE_TIMEOUT_MS"
     }
   ],
   "checks": [
     {
       "name": "ENFORCED: the checker allows",
       "env": {
-        "DYNAX_DAC_URL": "$CHECKER",
-        "DYNAX_SDK_KEY": "key",
-        "DYNAX_ENVIRONMENT": "TEST_DATA"
+        "SENSIVE_DAC_URL": "$CHECKER",
+        "SENSIVE_ENVIRONMENT": "TEST_DATA"
       },
       "checker": "ALLOW",
       "waits": true,
       "sent": {
         "mode": "ENFORCED",
-        "environment": "TEST_DATA",
-        "authorization": "Bearer key"
+        "environment": "TEST_DATA"
       },
       "result": {
         "decision": "ALLOW",
@@ -301,15 +246,13 @@
     {
       "name": "ENFORCED: the checker denies",
       "env": {
-        "DYNAX_DAC_URL": "$CHECKER",
-        "DYNAX_SDK_KEY": "key"
+        "SENSIVE_DAC_URL": "$CHECKER"
       },
       "checker": "DENY",
       "waits": true,
       "sent": {
         "mode": "ENFORCED",
-        "environment": "PRODUCTION_DATA",
-        "authorization": "Bearer key"
+        "environment": "PRODUCTION_DATA"
       },
       "result": {
         "decision": "DENY",
@@ -320,16 +263,14 @@
     {
       "name": "ENFORCED: the checker does not answer within the timeout",
       "env": {
-        "DYNAX_DAC_URL": "$CHECKER",
-        "DYNAX_SDK_KEY": "key",
-        "DYNAX_TIMEOUT_MS": "50"
+        "SENSIVE_DAC_URL": "$CHECKER",
+        "SENSIVE_TIMEOUT_MS": "50"
       },
       "checker": "HANG",
       "waits": true,
       "sent": {
         "mode": "ENFORCED",
-        "environment": "PRODUCTION_DATA",
-        "authorization": "Bearer key"
+        "environment": "PRODUCTION_DATA"
       },
       "result": {
         "decision": "DENY",
@@ -340,15 +281,13 @@
     {
       "name": "ENFORCED: the checker answers with an error",
       "env": {
-        "DYNAX_DAC_URL": "$CHECKER",
-        "DYNAX_SDK_KEY": "key"
+        "SENSIVE_DAC_URL": "$CHECKER"
       },
       "checker": "ERROR",
       "waits": true,
       "sent": {
         "mode": "ENFORCED",
-        "environment": "PRODUCTION_DATA",
-        "authorization": "Bearer key"
+        "environment": "PRODUCTION_DATA"
       },
       "result": {
         "decision": "DENY",
@@ -359,15 +298,13 @@
     {
       "name": "ENFORCED: the checker's answer carries no decision",
       "env": {
-        "DYNAX_DAC_URL": "$CHECKER",
-        "DYNAX_SDK_KEY": "key"
+        "SENSIVE_DAC_URL": "$CHECKER"
       },
       "checker": "NO_DECISION",
       "waits": true,
       "sent": {
         "mode": "ENFORCED",
-        "environment": "PRODUCTION_DATA",
-        "authorization": "Bearer key"
+        "environment": "PRODUCTION_DATA"
       },
       "result": {
         "decision": "DENY",
@@ -378,17 +315,15 @@
     {
       "name": "LOG_ONLY: the checker would allow",
       "env": {
-        "DYNAX_DAC_URL": "$CHECKER",
-        "DYNAX_SDK_KEY": "key",
-        "DYNAX_MODE": "LOG_ONLY",
-        "DYNAX_ENVIRONMENT": "TEST_DATA"
+        "SENSIVE_DAC_URL": "$CHECKER",
+        "SENSIVE_MODE": "LOG_ONLY",
+        "SENSIVE_ENVIRONMENT": "TEST_DATA"
       },
       "checker": "ALLOW",
       "waits": false,
       "sent": {
         "mode": "LOG_ONLY",
-        "environment": "TEST_DATA",
-        "authorization": "Bearer key"
+        "environment": "TEST_DATA"
       },
       "result": {
         "decision": "ALLOW",
@@ -399,16 +334,14 @@
     {
       "name": "LOG_ONLY: the checker would deny",
       "env": {
-        "DYNAX_DAC_URL": "$CHECKER",
-        "DYNAX_SDK_KEY": "key",
-        "DYNAX_MODE": "LOG_ONLY"
+        "SENSIVE_DAC_URL": "$CHECKER",
+        "SENSIVE_MODE": "LOG_ONLY"
       },
       "checker": "DENY",
       "waits": false,
       "sent": {
         "mode": "LOG_ONLY",
-        "environment": "PRODUCTION_DATA",
-        "authorization": "Bearer key"
+        "environment": "PRODUCTION_DATA"
       },
       "result": {
         "decision": "ALLOW",
@@ -419,17 +352,15 @@
     {
       "name": "LOG_ONLY: the checker does not answer",
       "env": {
-        "DYNAX_DAC_URL": "$CHECKER",
-        "DYNAX_SDK_KEY": "key",
-        "DYNAX_MODE": "LOG_ONLY",
-        "DYNAX_TIMEOUT_MS": "50"
+        "SENSIVE_DAC_URL": "$CHECKER",
+        "SENSIVE_MODE": "LOG_ONLY",
+        "SENSIVE_TIMEOUT_MS": "50"
       },
       "checker": "HANG",
       "waits": false,
       "sent": {
         "mode": "LOG_ONLY",
-        "environment": "PRODUCTION_DATA",
-        "authorization": "Bearer key"
+        "environment": "PRODUCTION_DATA"
       },
       "result": {
         "decision": "ALLOW",
@@ -440,53 +371,14 @@
     {
       "name": "LOG_ONLY: the checker answers with an error",
       "env": {
-        "DYNAX_DAC_URL": "$CHECKER",
-        "DYNAX_SDK_KEY": "key",
-        "DYNAX_MODE": "LOG_ONLY"
+        "SENSIVE_DAC_URL": "$CHECKER",
+        "SENSIVE_MODE": "LOG_ONLY"
       },
       "checker": "ERROR",
       "waits": false,
       "sent": {
         "mode": "LOG_ONLY",
-        "environment": "PRODUCTION_DATA",
-        "authorization": "Bearer key"
-      },
-      "result": {
-        "decision": "ALLOW",
-        "token": false,
-        "source": "MODE"
-      }
-    },
-    {
-      "name": "ENFORCED: with no key, no authorization is sent",
-      "env": {
-        "DYNAX_DAC_URL": "$CHECKER"
-      },
-      "checker": "ALLOW",
-      "waits": true,
-      "sent": {
-        "mode": "ENFORCED",
-        "environment": "PRODUCTION_DATA",
-        "authorization": null
-      },
-      "result": {
-        "decision": "ALLOW",
-        "token": true,
-        "source": "CHECKER"
-      }
-    },
-    {
-      "name": "LOG_ONLY: with no key, no authorization is sent",
-      "env": {
-        "DYNAX_DAC_URL": "$CHECKER",
-        "DYNAX_MODE": "LOG_ONLY"
-      },
-      "checker": "ALLOW",
-      "waits": false,
-      "sent": {
-        "mode": "LOG_ONLY",
-        "environment": "PRODUCTION_DATA",
-        "authorization": null
+        "environment": "PRODUCTION_DATA"
       },
       "result": {
         "decision": "ALLOW",
@@ -497,7 +389,7 @@
     {
       "name": "DISABLED: nothing is sent",
       "env": {
-        "DYNAX_MODE": "DISABLED"
+        "SENSIVE_MODE": "DISABLED"
       },
       "checker": "ALLOW",
       "waits": false,
@@ -513,8 +405,7 @@
     {
       "name": "ENFORCED: a check that could not be built is DENY",
       "env": {
-        "DYNAX_DAC_URL": "https://dac.example.com/api/dac",
-        "DYNAX_SDK_KEY": "key"
+        "SENSIVE_DAC_URL": "https://dac.example.com/api/dac"
       },
       "result": {
         "decision": "DENY",
@@ -525,9 +416,8 @@
     {
       "name": "LOG_ONLY: a check that could not be built is ALLOW",
       "env": {
-        "DYNAX_DAC_URL": "https://dac.example.com/api/dac",
-        "DYNAX_SDK_KEY": "key",
-        "DYNAX_MODE": "LOG_ONLY"
+        "SENSIVE_DAC_URL": "https://dac.example.com/api/dac",
+        "SENSIVE_MODE": "LOG_ONLY"
       },
       "result": {
         "decision": "ALLOW",
@@ -538,7 +428,7 @@
     {
       "name": "DISABLED: a check that could not be built is ALLOW",
       "env": {
-        "DYNAX_MODE": "DISABLED"
+        "SENSIVE_MODE": "DISABLED"
       },
       "result": {
         "decision": "ALLOW",

@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	sensiveclient "github.com/sensive-ai/sensive-go/client"
-	accessv1 "github.com/sensive-ai/sensive-go/client/gen/dynax/access/v1"
+	accessv1 "github.com/sensive-ai/sensive-go/client/gen/sensive/access/v1"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"

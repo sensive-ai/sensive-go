@@ -19,11 +19,10 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"slices"
 	"strings"
 	"testing"
 
-	accessv1 "github.com/sensive-ai/sensive-go/client/gen/dynax/access/v1"
+	accessv1 "github.com/sensive-ai/sensive-go/client/gen/sensive/access/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -38,7 +37,6 @@ type corpus struct {
 		Settings *struct {
 			Mode        string `json:"mode"`
 			DACURL      string `json:"dac_url"`
-			SDKKey      string `json:"sdk_key"`
 			Environment string `json:"environment"`
 			TimeoutMS   int64  `json:"timeout_ms"`
 		} `json:"settings"`
@@ -50,9 +48,8 @@ type corpus struct {
 		Checker string            `json:"checker"`
 		Waits   bool              `json:"waits"`
 		Sent    *struct {
-			Mode          string  `json:"mode"`
-			Environment   string  `json:"environment"`
-			Authorization *string `json:"authorization"` // nil: none is sent
+			Mode        string `json:"mode"`
+			Environment string `json:"environment"`
 		} `json:"sent"`
 		Result struct {
 			Decision string `json:"decision"`
@@ -105,7 +102,7 @@ func TestEnvironmentConformance(t *testing.T) {
 			if s.mode == ModeDisabled {
 				return
 			}
-			if s.dacURL != want.DACURL || s.sdkKey != want.SDKKey ||
+			if s.dacURL != want.DACURL ||
 				s.environment.String() != want.Environment || s.timeout.Milliseconds() != want.TimeoutMS {
 				t.Errorf("settings = %+v, want %+v", s, *want)
 			}
@@ -166,16 +163,10 @@ func TestCheckConformance(t *testing.T) {
 				return
 			}
 			got := <-c.arrived
-			wantAuthorization := []string{}
-			if tc.Sent.Authorization != nil {
-				wantAuthorization = []string{*tc.Sent.Authorization}
-			}
 			if got.request.GetMode().String() != tc.Sent.Mode ||
-				got.request.GetUsage().GetEnvironment().String() != tc.Sent.Environment ||
-				!slices.Equal(got.authorization, wantAuthorization) {
-				t.Errorf("sent mode %s, environment %s, authorization %q; want mode %s, environment %s, authorization %q",
-					got.request.GetMode(), got.request.GetUsage().GetEnvironment(), got.authorization,
-					tc.Sent.Mode, tc.Sent.Environment, wantAuthorization)
+				got.request.GetUsage().GetEnvironment().String() != tc.Sent.Environment {
+				t.Errorf("sent mode %s, environment %s; want mode %s, environment %s",
+					got.request.GetMode(), got.request.GetUsage().GetEnvironment(), tc.Sent.Mode, tc.Sent.Environment)
 			}
 		})
 	}

@@ -534,7 +534,7 @@ var File_conformance_v1_ledger_proto protoreflect.FileDescriptor
 
 const file_conformance_v1_ledger_proto_rawDesc = "" +
 	"\n" +
-	"\x1bconformance/v1/ledger.proto\x12\x0econformance.v1\x1a\x1adynax/v1/annotations.proto\"8\n" +
+	"\x1bconformance/v1/ledger.proto\x12\x0econformance.v1\x1a\x1csensive/v1/annotations.proto\"8\n" +
 	"\x17ListTransactionsRequest\x12\x1d\n" +
 	"\n" +
 	"account_id\x18\x01 \x01(\tR\taccountId\"C\n" +

@@ -16,7 +16,7 @@
 //
 // The client calls the checker over gRPC. Its messages and stubs are
 // generated from the checker's protos into gen/: the request a caller builds
-// is the API's own AccessCheckRequest (gen/dynax/access/v1), in the data
+// is the API's own AccessCheckRequest (gen/sensive/access/v1), in the data
 // taxonomy's vocabulary (gen/sensive/taxonomy/v1), so it is the one every
 // Sensive SDK sends.
 //
@@ -36,7 +36,7 @@ import (
 	"os"
 	"sync"
 
-	accessv1 "github.com/sensive-ai/sensive-go/client/gen/dynax/access/v1"
+	accessv1 "github.com/sensive-ai/sensive-go/client/gen/sensive/access/v1"
 	taxonomyv1 "github.com/sensive-ai/sensive-go/client/gen/sensive/taxonomy/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -121,16 +121,15 @@ type Client struct {
 var _ AccessChecker = (*Client)(nil)
 
 // FromEnv returns the client the environment configures (environment.go):
-// the checker in DYNAX_DAC_URL, authenticated with DYNAX_SDK_KEY when it
-// is set, in the mode DYNAX_MODE names. An environment it cannot read is
-// an error naming the variable (*ConfigError). It logs once what it read,
-// never the key.
+// the checker in SENSIVE_DAC_URL, in the mode SENSIVE_MODE names. An
+// environment it cannot read is an error naming the variable
+// (*ConfigError). It logs once what it read.
 //
 // The options are gRPC's, for the connection only: a private certificate
 // authority, interceptors, keepalive. They are applied after the client's
 // own, so one that sets the transport credentials replaces the client's;
-// they never change where the client connects or with which key. The
-// connection is made on the first check.
+// they never change where the client connects. The connection is made on
+// the first check.
 func FromEnv(opts ...grpc.DialOption) (*Client, error) {
 	s, err := settingsFrom(os.LookupEnv)
 	if err != nil {
@@ -140,7 +139,7 @@ func FromEnv(opts ...grpc.DialOption) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	slog.Info("dynax: configured", s.logAttrs()...)
+	slog.Info("sensive: configured", s.logAttrs()...)
 	return client, nil
 }
 
@@ -155,31 +154,15 @@ func newClient(s settings, opts ...grpc.DialOption) (*Client, error) {
 		transport = credentials.NewClientTLSFromCert(nil, "")
 	}
 	dial := []grpc.DialOption{grpc.WithTransportCredentials(transport)}
-	if s.sdkKey != "" {
-		dial = append(dial, grpc.WithPerRPCCredentials(bearer{authorization: "Bearer " + s.sdkKey, secure: s.secure}))
-	}
 	dial = append(dial, opts...)
 	conn, err := grpc.NewClient(s.target, dial...)
 	if err != nil {
-		return nil, fmt.Errorf("dynax client: %w", err)
+		return nil, fmt.Errorf("sensive client: %w", err)
 	}
 	client.conn = conn
 	client.authorization = accessv1.NewAuthorizationServiceClient(conn)
 	return client, nil
 }
-
-// bearer sends the API key on every call. Over TLS it refuses to be sent
-// on a connection that is not secure.
-type bearer struct {
-	authorization string
-	secure        bool
-}
-
-func (b bearer) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
-	return map[string]string{"authorization": b.authorization}, nil
-}
-
-func (b bearer) RequireTransportSecurity() bool { return b.secure }
 
 // Close waits for the LOG_ONLY checks still in flight, each bounded by the
 // timeout, and releases the client's connection. A LOG_ONLY check asked for
@@ -197,9 +180,9 @@ func (c *Client) Close() error {
 
 // CheckAccess asks for a decision on one request, and always returns ALLOW
 // or DENY. The client sends the request with the environment's
-// DYNAX_ENVIRONMENT and the mode, whatever the request carried. The
-// justification token, when the caller has one, is the request's
-// JustificationToken, the JWE a Sensive provider minted.
+// SENSIVE_ENVIRONMENT and the mode, whatever the request carried. The
+// context token, when the caller has one, is the request's
+// ContextToken, opaque to the client.
 //
 //   - ENFORCED: the checker's decision, with its token. A check that does
 //     not get one within the timeout, or fails, is DENY.
@@ -267,9 +250,9 @@ func decided(resp *accessv1.AccessCheckResponse, err error) Result {
 	}
 	switch {
 	case status.Code(err) == codes.DeadlineExceeded:
-		return deny(SourceTimeout, fmt.Errorf("dynax client: check access: %w", err))
+		return deny(SourceTimeout, fmt.Errorf("sensive client: check access: %w", err))
 	case err != nil:
-		return deny(SourceFailure, fmt.Errorf("dynax client: check access: %w", err))
+		return deny(SourceFailure, fmt.Errorf("sensive client: check access: %w", err))
 	}
 	switch resp.GetResult() {
 	case accessv1.AccessDecision_ALLOW, accessv1.AccessDecision_DENY:

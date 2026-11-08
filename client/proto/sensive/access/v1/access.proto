@@ -21,23 +21,23 @@ syntax = "proto3";
 //
 // The Dynamic Access Checker evaluates access requests against the
 // organization's policies to decide whether a principal is allowed or denied
-// access to protected resources, and validates the justification tokens
+// access to protected resources, and validates the context tokens
 // requests carry.
 //
 // Applications integrate through an SDK (recommended) or call the API
 // directly.
-package dynax.access.v1;
+package sensive.access.v1;
 
 import "sensive/taxonomy/v1/taxonomy.proto";
 
-option go_package = "github.com/sensive-ai/sensive-go/client/gen/dynax/access/v1;accessv1";
+option go_package = "github.com/sensive-ai/sensive-go/client/gen/sensive/access/v1;accessv1";
 
 // Real-time access control decisions
 service AuthorizationService {
   // Evaluates whether a principal should be allowed or denied one operation
   // of one application, described in the data taxonomy
   // (sensive.taxonomy.v1), against the organization's policy. The checker
-  // verifies the justification token, evaluates the request once per action
+  // verifies the context token, evaluates the request once per action
   // type (any deny wins), records the decision in the access log, and mints
   // a signed decision token.
   rpc CheckAccess(AccessCheckRequest) returns (AccessCheckResponse);
@@ -74,13 +74,13 @@ message AccessCheckRequest {
   // one.
   optional string resource_id = 8;
 
-  // JWE-encrypted justification token from a Sensive provider. Contains
-  // validated ticket information for policy evaluation. The caller
-  // forwards it unchanged from the Dynax-Justification-Token header of the
+  // The context token: validated context information for policy
+  // evaluation, issued by Sensive and opaque to the caller. The caller
+  // forwards it unchanged from the Sensive-Context-Token header of the
   // request it is checking; absent when that request carried none.
-  optional string justification_token = 9;
+  optional string context_token = 9;
 
-  // Whether the caller acts on the decision: the SDK's `DYNAX_MODE`. The
+  // Whether the caller acts on the decision: the SDK's `SENSIVE_MODE`. The
   // decision is made and recorded the same either way; the access log
   // records the mode with it. Absent reads as ENFORCED.
   optional Mode.Value mode = 10;
@@ -90,7 +90,7 @@ message AccessCheckRequest {
 message AccessCheckResponse {
   optional AccessDecision.Value result = 1;
 
-  // Signed JWT decision token (RS256, JOSE header `typ: dynax-decision+jwt`),
+  // Signed JWT decision token (RS256, JOSE header `typ: sensive-decision+jwt`),
   // minted for every decision — ALLOW and DENY alike. Base64-decode the
   // payload for the non-sensitive claims (jti, decision, application, and
   // denialReason when denied). The `jti` also keys the decision's access-log

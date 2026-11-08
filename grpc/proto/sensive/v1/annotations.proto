@@ -79,7 +79,7 @@ message Operation {
   // How this organization uses the operation. `subjects` is declared on
   // every method, as every SDK requires of a route. `environment` is not
   // set here: it is true of the deployment, and every SDK takes it from
-  // the DYNAX_ENVIRONMENT environment variable.
+  // the SENSIVE_ENVIRONMENT environment variable.
   sensive.taxonomy.v1.UsageDescriptors usage = 3;
 
   // Set when the request identifies the owner of the data it touches — the

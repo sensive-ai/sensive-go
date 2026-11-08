@@ -19,13 +19,13 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             (unknown)
-// source: dynax/access/v1/access.proto
+// source: sensive/access/v1/access.proto
 
 // Real-time access control API for Sensive.
 //
 // The Dynamic Access Checker evaluates access requests against the
 // organization's policies to decide whether a principal is allowed or denied
-// access to protected resources, and validates the justification tokens
+// access to protected resources, and validates the context tokens
 // requests carry.
 //
 // Applications integrate through an SDK (recommended) or call the API
@@ -46,7 +46,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthorizationService_CheckAccess_FullMethodName = "/dynax.access.v1.AuthorizationService/CheckAccess"
+	AuthorizationService_CheckAccess_FullMethodName = "/sensive.access.v1.AuthorizationService/CheckAccess"
 )
 
 // AuthorizationServiceClient is the client API for AuthorizationService service.
@@ -58,7 +58,7 @@ type AuthorizationServiceClient interface {
 	// Evaluates whether a principal should be allowed or denied one operation
 	// of one application, described in the data taxonomy
 	// (sensive.taxonomy.v1), against the organization's policy. The checker
-	// verifies the justification token, evaluates the request once per action
+	// verifies the context token, evaluates the request once per action
 	// type (any deny wins), records the decision in the access log, and mints
 	// a signed decision token.
 	CheckAccess(ctx context.Context, in *AccessCheckRequest, opts ...grpc.CallOption) (*AccessCheckResponse, error)
@@ -91,7 +91,7 @@ type AuthorizationServiceServer interface {
 	// Evaluates whether a principal should be allowed or denied one operation
 	// of one application, described in the data taxonomy
 	// (sensive.taxonomy.v1), against the organization's policy. The checker
-	// verifies the justification token, evaluates the request once per action
+	// verifies the context token, evaluates the request once per action
 	// type (any deny wins), records the decision in the access log, and mints
 	// a signed decision token.
 	CheckAccess(context.Context, *AccessCheckRequest) (*AccessCheckResponse, error)
@@ -151,7 +151,7 @@ func _AuthorizationService_CheckAccess_Handler(srv interface{}, ctx context.Cont
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var AuthorizationService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "dynax.access.v1.AuthorizationService",
+	ServiceName: "sensive.access.v1.AuthorizationService",
 	HandlerType: (*AuthorizationServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -160,5 +160,5 @@ var AuthorizationService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "dynax/access/v1/access.proto",
+	Metadata: "sensive/access/v1/access.proto",
 }

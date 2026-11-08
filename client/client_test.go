@@ -30,18 +30,16 @@ import (
 	"testing"
 	"time"
 
-	accessv1 "github.com/sensive-ai/sensive-go/client/gen/dynax/access/v1"
+	accessv1 "github.com/sensive-ai/sensive-go/client/gen/sensive/access/v1"
 	taxonomyv1 "github.com/sensive-ai/sensive-go/client/gen/sensive/taxonomy/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
 
-// The request every SDK's documentation builds, with a justification token
+// The request every SDK's documentation builds, with a context token
 // and no environment, which the client adds.
 func sampleRequest() *accessv1.AccessCheckRequest {
 	return &accessv1.AccessCheckRequest{
@@ -57,15 +55,14 @@ func sampleRequest() *accessv1.AccessCheckRequest {
 			Subjects:      []taxonomyv1.Subject_Value{taxonomyv1.Subject_USER},
 			SourceDetails: []taxonomyv1.SourceDetail_Value{taxonomyv1.SourceDetail_USER},
 		},
-		Owner:              OwnerID("cust_123"),
-		JustificationToken: proto.String("jwe-token"),
+		Owner:        OwnerID("cust_123"),
+		ContextToken: proto.String("jwe-token"),
 	}
 }
 
 // arrival is one check as the fake checker received it.
 type arrival struct {
-	request       *accessv1.AccessCheckRequest
-	authorization []string
+	request *accessv1.AccessCheckRequest
 }
 
 // checker is a Dynamic Access Checker that reports each check as it
@@ -85,8 +82,7 @@ func newChecker(answer func(ctx context.Context) (*accessv1.AccessCheckResponse,
 }
 
 func (c *checker) CheckAccess(ctx context.Context, req *accessv1.AccessCheckRequest) (*accessv1.AccessCheckResponse, error) {
-	md, _ := metadata.FromIncomingContext(ctx)
-	c.arrived <- arrival{request: req, authorization: md.Get("authorization")}
+	c.arrived <- arrival{request: req}
 	if c.hold {
 		select {
 		case <-c.release:
@@ -153,11 +149,11 @@ func TestTheTargetIsTheURLsHostAndPort(t *testing.T) {
 		target string
 		secure bool
 	}{
-		"https://dynax.example.com/api/dac":  {"dynax.example.com:443", true},
-		"https://dynax.example.com:8443":     {"dynax.example.com:8443", true},
-		"http://localhost:3010/api/dac":      {"localhost:3010", false},
-		"http://localhost":                   {"localhost:80", false},
-		"https://dynax.example.com/api/dac/": {"dynax.example.com:443", true},
+		"https://sensive.example.com/api/dac":  {"sensive.example.com:443", true},
+		"https://sensive.example.com:8443":     {"sensive.example.com:8443", true},
+		"http://localhost:3010/api/dac":        {"localhost:3010", false},
+		"http://localhost":                     {"localhost:80", false},
+		"https://sensive.example.com/api/dac/": {"sensive.example.com:443", true},
 	} {
 		target, secure, err := targetOf(in)
 		if err != nil || target != want.target || secure != want.secure {
@@ -167,16 +163,16 @@ func TestTheTargetIsTheURLsHostAndPort(t *testing.T) {
 }
 
 func TestARefusalNamesItsVariable(t *testing.T) {
-	_, err := settingsFrom(lookupIn(map[string]string{"DYNAX_MODE": "OFF"}))
+	_, err := settingsFrom(lookupIn(map[string]string{"SENSIVE_MODE": "OFF"}))
 	var refused *ConfigError
-	if !errors.As(err, &refused) || refused.Variable != "DYNAX_MODE" || !strings.Contains(err.Error(), "DYNAX_MODE") {
-		t.Fatalf("err = %v, want a ConfigError naming DYNAX_MODE", err)
+	if !errors.As(err, &refused) || refused.Variable != "SENSIVE_MODE" || !strings.Contains(err.Error(), "SENSIVE_MODE") {
+		t.Fatalf("err = %v, want a ConfigError naming SENSIVE_MODE", err)
 	}
 }
 
 func TestTheRequestIsSentAsGivenWithTheEnvironmentAndMode(t *testing.T) {
 	c := newChecker(answering(allow(), nil))
-	client := clientFor(t, map[string]string{"DYNAX_DAC_URL": serve(t, c, nil), "DYNAX_SDK_KEY": "key", "DYNAX_ENVIRONMENT": "TEST_DATA"})
+	client := clientFor(t, map[string]string{"SENSIVE_DAC_URL": serve(t, c, nil), "SENSIVE_ENVIRONMENT": "TEST_DATA"})
 	req := sampleRequest()
 
 	client.CheckAccess(context.Background(), req)
@@ -193,55 +189,21 @@ func TestTheRequestIsSentAsGivenWithTheEnvironmentAndMode(t *testing.T) {
 	}
 }
 
-func TestTheKeyTravelsOverTLS(t *testing.T) {
+func TestTheClientChecksOverTLS(t *testing.T) {
 	serverTLS, roots := selfSigned(t)
 	c := newChecker(answering(allow(), nil))
 	checkerURL := serve(t, c, credentials.NewTLS(serverTLS))
-	client := clientFor(t, map[string]string{"DYNAX_DAC_URL": checkerURL, "DYNAX_SDK_KEY": "dynax_org_secret"},
+	client := clientFor(t, map[string]string{"SENSIVE_DAC_URL": checkerURL},
 		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{RootCAs: roots})))
 
 	if result := client.CheckAccess(context.Background(), sampleRequest()); result.Source != SourceChecker {
 		t.Fatalf("check over TLS: %+v", result)
 	}
-	if got := (<-c.arrived).authorization; len(got) != 1 || got[0] != "Bearer dynax_org_secret" {
-		t.Errorf("authorization = %q", got)
-	}
-}
-
-func TestWithoutAKeyNothingIsSentAsTheBearer(t *testing.T) {
-	// Over TLS, with no key, the client connects and sends no
-	// authorization at all.
-	serverTLS, roots := selfSigned(t)
-	c := newChecker(answering(allow(), nil))
-	checkerURL := serve(t, c, credentials.NewTLS(serverTLS))
-	client := clientFor(t, map[string]string{"DYNAX_DAC_URL": checkerURL},
-		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{RootCAs: roots})))
-
-	if result := client.CheckAccess(context.Background(), sampleRequest()); result.Source != SourceChecker {
-		t.Fatalf("check without a key: %+v", result)
-	}
-	if got := (<-c.arrived).authorization; len(got) != 0 {
-		t.Errorf("authorization = %q, want none", got)
-	}
-}
-
-func TestAnHTTPSClientWillNotSendTheKeyInTheClear(t *testing.T) {
-	// An insecure transport over an https URL stands in for a
-	// misconfiguration: gRPC refuses to build a client whose key would
-	// travel without TLS.
-	s, err := settingsFrom(lookupIn(map[string]string{"DYNAX_DAC_URL": "https://127.0.0.1:1/api/dac", "DYNAX_SDK_KEY": "key"}))
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = newClient(s, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err == nil || !strings.Contains(err.Error(), "transport level security") {
-		t.Fatalf("err = %v, want a refusal to send the key without TLS", err)
-	}
 }
 
 func TestAFailureKeepsItsCause(t *testing.T) {
 	c := newChecker(answering(nil, status.Error(codes.Unauthenticated, "refused")))
-	client := clientFor(t, map[string]string{"DYNAX_DAC_URL": serve(t, c, nil), "DYNAX_SDK_KEY": "key"})
+	client := clientFor(t, map[string]string{"SENSIVE_DAC_URL": serve(t, c, nil)})
 
 	result := client.CheckAccess(context.Background(), sampleRequest())
 	if result.Allowed() || result.Source != SourceFailure || status.Code(result.Err) != codes.Unauthenticated {
@@ -250,7 +212,7 @@ func TestAFailureKeepsItsCause(t *testing.T) {
 }
 
 func TestACancelledCallIsDenied(t *testing.T) {
-	client := clientFor(t, map[string]string{"DYNAX_DAC_URL": serve(t, newChecker(answering(allow(), nil)), nil), "DYNAX_SDK_KEY": "key"})
+	client := clientFor(t, map[string]string{"SENSIVE_DAC_URL": serve(t, newChecker(answering(allow(), nil)), nil)})
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	if result := client.CheckAccess(ctx, sampleRequest()); result.Allowed() || result.Source != SourceFailure {
@@ -261,7 +223,7 @@ func TestACancelledCallIsDenied(t *testing.T) {
 func TestLogOnlyChecksInFlightAreBounded(t *testing.T) {
 	c := newChecker(answering(allow(), nil))
 	c.hold = true
-	client := clientFor(t, map[string]string{"DYNAX_DAC_URL": serve(t, c, nil), "DYNAX_SDK_KEY": "key", "DYNAX_MODE": "LOG_ONLY"})
+	client := clientFor(t, map[string]string{"SENSIVE_DAC_URL": serve(t, c, nil), "SENSIVE_MODE": "LOG_ONLY"})
 
 	for range logOnlyInFlight + 10 {
 		if result := client.CheckAccess(context.Background(), sampleRequest()); !result.Allowed() {
@@ -284,7 +246,7 @@ func TestLogOnlyChecksInFlightAreBounded(t *testing.T) {
 
 func TestCloseRacesNoBackgroundCheck(t *testing.T) {
 	c := newChecker(answering(allow(), nil))
-	client := clientFor(t, map[string]string{"DYNAX_DAC_URL": serve(t, c, nil), "DYNAX_SDK_KEY": "key", "DYNAX_MODE": "LOG_ONLY"})
+	client := clientFor(t, map[string]string{"SENSIVE_DAC_URL": serve(t, c, nil), "SENSIVE_MODE": "LOG_ONLY"})
 
 	// Checks asked for while Close runs, as during a graceful shutdown:
 	// none may panic, and none is sent once Close has begun.

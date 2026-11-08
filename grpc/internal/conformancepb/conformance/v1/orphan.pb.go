@@ -102,7 +102,7 @@ var File_conformance_v1_orphan_proto protoreflect.FileDescriptor
 
 const file_conformance_v1_orphan_proto_rawDesc = "" +
 	"\n" +
-	"\x1bconformance/v1/orphan.proto\x12\x0econformance.v1\x1a\x1adynax/v1/annotations.proto\"\x0f\n" +
+	"\x1bconformance/v1/orphan.proto\x12\x0econformance.v1\x1a\x1csensive/v1/annotations.proto\"\x0f\n" +
 	"\rOrphanRequest\"\x10\n" +
 	"\x0eOrphanResponse2e\n" +
 	"\x06Orphan\x12[\n" +

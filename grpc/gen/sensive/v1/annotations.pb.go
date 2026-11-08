@@ -137,7 +137,7 @@ type Operation struct {
 	// How this organization uses the operation. `subjects` is declared on
 	// every method, as every SDK requires of a route. `environment` is not
 	// set here: it is true of the deployment, and every SDK takes it from
-	// the DYNAX_ENVIRONMENT environment variable.
+	// the SENSIVE_ENVIRONMENT environment variable.
 	Usage *v1.UsageDescriptors `protobuf:"bytes,3,opt,name=usage,proto3" json:"usage,omitempty"`
 	// Set when the request identifies the owner of the data it touches — the
 	// customer whose data it is — and the application resolves the owner in

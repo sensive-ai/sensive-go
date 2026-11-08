@@ -110,8 +110,8 @@ type PrincipalResolver func(ctx context.Context, md metadata.MD, fullMethod stri
 
 // Config is what code configures: the principal resolver, and optionally
 // the client the interceptor asks and its logger. Everything about the
-// deployment, the checker, its key, the environment, the timeout and the
-// mode, is the client's, read from the environment every Sensive SDK reads
+// deployment, the checker, the environment, the timeout and the mode, is
+// the client's, read from the environment every Sensive SDK reads
 // (the client module's README, "Configuration"). The application and its
 // categories are declared in the service's own proto options, with the
 // rest of the annotation.

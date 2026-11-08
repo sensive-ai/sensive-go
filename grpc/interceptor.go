@@ -30,8 +30,8 @@
 // in ENFORCED mode a failure to get a decision denies, so a checker outage
 // degrades internal tooling and never the product.
 //
-// The caller's justification token arrives as the call metadata
-// JustificationTokenKey, and the client interceptors carry it hop to hop.
+// The caller's context token arrives as the call metadata
+// ContextTokenKey, and the client interceptors carry it hop to hop.
 // The checker's decision token goes back as the response header metadata
 // DecisionTokenKey, on allow and deny alike, and on deny also in the
 // PermissionDenied status's details, where it survives a chain of callers.
@@ -46,7 +46,7 @@ import (
 	"sort"
 
 	sensiveclient "github.com/sensive-ai/sensive-go/client"
-	accessv1 "github.com/sensive-ai/sensive-go/client/gen/dynax/access/v1"
+	accessv1 "github.com/sensive-ai/sensive-go/client/gen/sensive/access/v1"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -57,7 +57,7 @@ import (
 )
 
 // ErrorDomain is the domain of the ErrorInfo detail a denial carries.
-const ErrorDomain = "dynax.co"
+const ErrorDomain = "sensive.ai"
 
 // The reasons a denial's ErrorInfo detail gives.
 const (
@@ -114,7 +114,7 @@ func Owner[T proto.Message](fullMethod string, resolve func(ctx context.Context,
 	input := zero.ProtoReflect().Descriptor().FullName()
 	return func(i *Interceptor) error {
 		if _, dup := i.owners[fullMethod]; dup {
-			return fmt.Errorf("dynax: %s has two owner resolvers", fullMethod)
+			return fmt.Errorf("sensive: %s has two owner resolvers", fullMethod)
 		}
 		i.owners[fullMethod] = ownerEntry{
 			input: input,
@@ -139,7 +139,7 @@ func Owner[T proto.Message](fullMethod string, resolve func(ctx context.Context,
 func OwnerLookup(lookup func(ctx context.Context, key string) (*accessv1.Owner, error)) Option {
 	return func(i *Interceptor) error {
 		if i.lookup != nil {
-			return errors.New("dynax: OwnerLookup is registered twice")
+			return errors.New("sensive: OwnerLookup is registered twice")
 		}
 		i.lookup = lookup
 		return nil
@@ -150,7 +150,7 @@ func OwnerLookup(lookup func(ctx context.Context, key string) (*accessv1.Owner, 
 // resolvers.
 func New(cfg Config, opts ...Option) (*Interceptor, error) {
 	if cfg.PrincipalResolver == nil {
-		return nil, errors.New("dynax: a principal resolver is required; it is what keeps the product's traffic outside Dynax's path")
+		return nil, errors.New("sensive: a principal resolver is required; it is what keeps the product's traffic outside Sensive's path")
 	}
 	if cfg.Logger == nil {
 		cfg.Logger = slog.Default()
@@ -235,23 +235,23 @@ func (i *Interceptor) decide(ctx context.Context, fullMethod string, req any) er
 	}
 
 	check := ann.Request(email, owner)
-	if values := md.Get(JustificationTokenKey); len(values) > 0 && values[0] != "" {
-		check.JustificationToken = proto.String(values[0])
+	if values := md.Get(ContextTokenKey); len(values) > 0 && values[0] != "" {
+		check.ContextToken = proto.String(values[0])
 	}
 	result := i.checker.CheckAccess(ctx, check)
 	if result.DecisionToken != "" {
 		if err := grpc.SetHeader(ctx, metadata.Pairs(DecisionTokenKey, result.DecisionToken)); err != nil {
-			i.log.Warn("dynax: could not set the decision token header", "method", fullMethod, "error", err)
+			i.log.Warn("sensive: could not set the decision token header", "method", fullMethod, "error", err)
 		}
 	}
 	switch {
 	case result.Allowed():
 		return nil
 	case result.Source == sensiveclient.SourceChecker:
-		i.log.Info("dynax_denied", "method", fullMethod, "operation", ann.Operation, "principal", email)
+		i.log.Info("sensive_denied", "method", fullMethod, "operation", ann.Operation, "principal", email)
 		return denied(ReasonDenied, result.DecisionToken)
 	default:
-		i.log.Error("dynax: access check failed; denying", "method", fullMethod, "operation", ann.Operation,
+		i.log.Error("sensive: access check failed; denying", "method", fullMethod, "operation", ann.Operation,
 			"source", result.Source, "error", result.Err)
 		return denied(ReasonCheckerUnavailable, "")
 	}
@@ -263,7 +263,7 @@ func (i *Interceptor) failed(fullMethod, reason string, cause error) error {
 	if i.checker.Failed(cause).Allowed() {
 		return nil
 	}
-	i.log.Error("dynax: denying a call whose check could not be built", "method", fullMethod, "reason", reason, "error", cause)
+	i.log.Error("sensive: denying a call whose check could not be built", "method", fullMethod, "reason", reason, "error", cause)
 	return denied(reason, "")
 }
 
@@ -299,7 +299,7 @@ func (i *Interceptor) resolveOwner(ctx context.Context, ann *Annotation, req any
 func (i *Interceptor) resolve(ctx context.Context, md metadata.MD, fullMethod string) (actor *Actor) {
 	defer func() {
 		if r := recover(); r != nil {
-			i.log.Error("dynax: principal resolver panicked; bypassing. A call that fails classification is never gated: fix the resolver", "method", fullMethod, "panic", r)
+			i.log.Error("sensive: principal resolver panicked; bypassing. A call that fails classification is never gated: fix the resolver", "method", fullMethod, "panic", r)
 			actor = nil
 		}
 	}()
@@ -309,10 +309,10 @@ func (i *Interceptor) resolve(ctx context.Context, md metadata.MD, fullMethod st
 // The message each reason's status carries: what a human reading the error
 // sees first, before the detail.
 var reasonMessages = map[string]string{
-	ReasonDenied:             "denied by Dynax access policy",
-	ReasonCheckerUnavailable: "Dynax access check could not complete",
-	ReasonUnevaluableActor:   "Dynax cannot evaluate this actor's identity",
-	ReasonMisconfigured:      "Dynax gating of this method is misconfigured",
+	ReasonDenied:             "denied by Sensive access policy",
+	ReasonCheckerUnavailable: "Sensive access check could not complete",
+	ReasonUnevaluableActor:   "Sensive cannot evaluate this actor's identity",
+	ReasonMisconfigured:      "Sensive gating of this method is misconfigured",
 }
 
 // denied is the PermissionDenied status a gated call fails with, carrying
@@ -381,36 +381,36 @@ func (i *Interceptor) Verify(srv *grpc.Server) error {
 			entry, hasResolver := i.owners[fullMethod]
 			switch {
 			case hasResolver && ann.OwnerField != nil:
-				problems = append(problems, fmt.Errorf("dynax: %s names owner_field and also has an owner resolver; keep one", fullMethod))
+				problems = append(problems, fmt.Errorf("sensive: %s names owner_field and also has an owner resolver; keep one", fullMethod))
 			case ann.OwnerField != nil && i.lookup == nil:
-				problems = append(problems, fmt.Errorf("dynax: %s names owner_field %q but no OwnerLookup is registered", fullMethod, ann.OwnerField.Name()))
+				problems = append(problems, fmt.Errorf("sensive: %s names owner_field %q but no OwnerLookup is registered", fullMethod, ann.OwnerField.Name()))
 			case ann.HasOwner && ann.OwnerField == nil && !hasResolver:
-				problems = append(problems, fmt.Errorf("dynax: %s declares has_owner but names no owner_field and has no owner resolver", fullMethod))
+				problems = append(problems, fmt.Errorf("sensive: %s declares has_owner but names no owner_field and has no owner resolver", fullMethod))
 			case !ann.HasOwner && hasResolver:
-				problems = append(problems, fmt.Errorf("dynax: %s has an owner resolver but does not declare has_owner", fullMethod))
+				problems = append(problems, fmt.Errorf("sensive: %s has an owner resolver but does not declare has_owner", fullMethod))
 			case hasResolver && entry.input != ann.Input:
-				problems = append(problems, fmt.Errorf("dynax: %s: the owner resolver takes %s, the method's request is %s", fullMethod, entry.input, ann.Input))
+				problems = append(problems, fmt.Errorf("sensive: %s: the owner resolver takes %s, the method's request is %s", fullMethod, entry.input, ann.Input))
 			}
 		}
 	}
 	if i.lookup != nil && !usesLookup {
-		problems = append(problems, errors.New("dynax: an OwnerLookup is registered but no method names an owner_field"))
+		problems = append(problems, errors.New("sensive: an OwnerLookup is registered but no method names an owner_field"))
 	}
 	for fullMethod := range i.owners {
 		if !seen[fullMethod] {
-			problems = append(problems, fmt.Errorf("dynax: an owner resolver is registered for %s, which no registered service serves", fullMethod))
+			problems = append(problems, fmt.Errorf("sensive: an owner resolver is registered for %s, which no registered service serves", fullMethod))
 		}
 	}
 
 	sort.Strings(ungated)
 	sort.Strings(gated)
-	i.log.Info("dynax_coverage", "gated", len(gated), "ungated", len(ungated), "ungated_methods", ungated)
+	i.log.Info("sensive_coverage", "gated", len(gated), "ungated", len(ungated), "ungated_methods", ungated)
 	return errors.Join(problems...)
 }
 
-// UnaryClient propagates an incoming justification token to outgoing unary
+// UnaryClient propagates an incoming context token to outgoing unary
 // calls, so a service that calls another on behalf of the same caller
-// carries the justification with it, as it carries the caller's identity.
+// carries the context token with it, as it carries the caller's identity.
 func UnaryClient() grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		return invoker(propagate(ctx), method, req, reply, cc, opts...)
@@ -424,19 +424,19 @@ func StreamClient() grpc.StreamClientInterceptor {
 	}
 }
 
-// propagate copies the incoming justification token to the outgoing
+// propagate copies the incoming context token to the outgoing
 // metadata, unless the caller already set one.
 func propagate(ctx context.Context) context.Context {
-	if out, ok := metadata.FromOutgoingContext(ctx); ok && len(out.Get(JustificationTokenKey)) > 0 {
+	if out, ok := metadata.FromOutgoingContext(ctx); ok && len(out.Get(ContextTokenKey)) > 0 {
 		return ctx
 	}
 	in, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return ctx
 	}
-	values := in.Get(JustificationTokenKey)
+	values := in.Get(ContextTokenKey)
 	if len(values) == 0 {
 		return ctx
 	}
-	return metadata.AppendToOutgoingContext(ctx, JustificationTokenKey, values[0])
+	return metadata.AppendToOutgoingContext(ctx, ContextTokenKey, values[0])
 }
