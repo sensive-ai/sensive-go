@@ -1,24 +1,15 @@
-# Dependabot keeps the workflows' actions and each module's dependencies
-# current. A module's go.mod requires the versions it is tested against,
-# and Go builds a customer's program with the highest version any module
-# requires, so these are the oldest versions a customer can end up with.
+# Dependabot keeps the workflows' actions current.
 #
-# The gRPC module builds against the client in ../client, so a dependency
-# the two share is updated in both at once: one pull request per
-# dependency, across both directories.
+# It leaves the modules' dependencies alone. A library's go.mod is a floor,
+# not a pin: Go builds a customer's program with the highest version any
+# module in it requires, so every version the SDK requires is one its
+# customers are made to take. Each go.mod requires no newer version than
+# the SDK needs, and CI tests those versions (the floors job) and the
+# newest (the latest job). A floor is raised by hand, when the SDK needs
+# something newer, and only in a minor release.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
-  - package-ecosystem: gomod
-    directories:
-      - /client
-      - /grpc
-    schedule:
-      interval: weekly
-    groups:
-      go:
-        patterns: ["*"]
-        group-by: dependency-name

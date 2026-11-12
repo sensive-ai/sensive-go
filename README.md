@@ -36,7 +36,8 @@ The SDK follows semantic versioning and is at v0:
 - A patch release (`v0.1.0` to `v0.1.1`) fixes or adds without breaking
   anything, so it is always safe to take.
 - A minor release (`v0.1.0` to `v0.2.0`) may change the API or the
-  configuration, or require a newer Go. Its
+  configuration, or require a newer Go or newer versions of the SDK's
+  dependencies. Its
   [release notes](https://github.com/sensive-ai/sensive-go/releases) say
   what to change.
 
@@ -44,7 +45,9 @@ Use the same minor version of both modules: `grpc` v0.2.x with `client`
 v0.2.x.
 
 Each module requires the Go release its `go.mod` names, or a newer one,
-and is tested on that release and on the newest.
+and no newer version of a dependency than the SDK needs, so adding the
+SDK moves your program's dependencies as little as it can. Each is tested
+at those versions and at the newest.
 
 ## Security
 
