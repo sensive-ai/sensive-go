@@ -23,6 +23,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"errors"
+	"log/slog"
 	"math/big"
 	"net"
 	"strings"
@@ -307,4 +308,171 @@ func selfSigned(t *testing.T) (*tls.Config, *x509.CertPool) {
 	roots := x509.NewCertPool()
 	roots.AddCert(cert)
 	return &tls.Config{Certificates: []tls.Certificate{{Certificate: [][]byte{der}, PrivateKey: key}}}, roots
+}
+
+// syncBuffer is a log destination the background checks may write to
+// while the test reads it.
+type syncBuffer struct {
+	mu  sync.Mutex
+	buf strings.Builder
+}
+
+func (b *syncBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.Write(p)
+}
+
+func (b *syncBuffer) lines() []string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	text := strings.TrimSpace(b.buf.String())
+	if text == "" {
+		return nil
+	}
+	return strings.Split(text, "\n")
+}
+
+// logging sends the client's refusal lines to a buffer, on a clock the
+// test moves.
+func logging(client *Client) (*syncBuffer, *time.Time) {
+	out := &syncBuffer{}
+	clock := time.Unix(1_800_000_000, 0)
+	client.refusals.logger = slog.New(slog.NewTextHandler(out, nil))
+	client.refusals.now = func() time.Time { return clock }
+	return out, &clock
+}
+
+const brokenRule = "capability.sources[0]: value must not be in list [0] [enum.not_in]"
+
+func TestAMalformedLogOnlyRequestIsLogged(t *testing.T) {
+	c := newChecker(answering(nil, status.Error(codes.InvalidArgument, brokenRule)))
+	client := clientFor(t, map[string]string{"SENSIVE_DAC_URL": serve(t, c, nil), "SENSIVE_MODE": "LOG_ONLY"})
+	out, _ := logging(client)
+
+	if result := client.CheckAccess(context.Background(), sampleRequest()); !result.Allowed() || result.Source != SourceMode {
+		t.Fatalf("result = %+v, want ALLOW at once", result)
+	}
+	if err := client.Close(); err != nil { // waits for the background check
+		t.Fatal(err)
+	}
+	lines := out.lines()
+	if len(lines) != 1 {
+		t.Fatalf("logged %d lines, want 1:\n%s", len(lines), strings.Join(lines, "\n"))
+	}
+	for _, part := range []string{
+		"level=WARN",
+		"access check refused, not decided: the request is malformed",
+		"reason=malformed",
+		"mode=LOG_ONLY",
+		`detail="` + brokenRule + `"`,
+		"skipped=0",
+	} {
+		if !strings.Contains(lines[0], part) {
+			t.Errorf("%q is not in %s", part, lines[0])
+		}
+	}
+}
+
+// Each refusal is logged with the checker's reason for it.
+func TestEachRefusalIsLoggedWithItsReason(t *testing.T) {
+	for _, tc := range []struct {
+		code   codes.Code
+		reason string
+		says   string
+	}{
+		{codes.InvalidArgument, "malformed", "not decided: the request is malformed"},
+		{codes.Unauthenticated, "unauthenticated", "not decided: the checker could not identify the caller"},
+		{codes.PermissionDenied, "forbidden", "not decided: the caller may not ask for one"},
+	} {
+		for _, mode := range []string{"ENFORCED", "LOG_ONLY"} {
+			c := newChecker(answering(nil, status.Error(tc.code, "the checker's detail")))
+			client := clientFor(t, map[string]string{"SENSIVE_DAC_URL": serve(t, c, nil), "SENSIVE_MODE": mode})
+			out, _ := logging(client)
+			client.CheckAccess(context.Background(), sampleRequest())
+			if err := client.Close(); err != nil {
+				t.Fatal(err)
+			}
+			lines := out.lines()
+			if len(lines) != 1 {
+				t.Fatalf("%s in %s logged %d lines, want 1:\n%s", tc.code, mode, len(lines), strings.Join(lines, "\n"))
+			}
+			for _, part := range []string{tc.says, "reason=" + tc.reason, "mode=" + mode, `detail="the checker's detail"`} {
+				if !strings.Contains(lines[0], part) {
+					t.Errorf("%s in %s: %q is not in %s", tc.code, mode, part, lines[0])
+				}
+			}
+			// The check has no result; what the client returned is not one.
+			for _, result := range []string{"ALLOW", "DENY"} {
+				if strings.Contains(lines[0], result) {
+					t.Errorf("%s in %s: the line names %s: %s", tc.code, mode, result, lines[0])
+				}
+			}
+		}
+	}
+}
+
+func TestRefusalsAreLoggedOnceAMinute(t *testing.T) {
+	c := newChecker(answering(nil, status.Error(codes.InvalidArgument, brokenRule)))
+	client := clientFor(t, map[string]string{"SENSIVE_DAC_URL": serve(t, c, nil)})
+	out, clock := logging(client)
+
+	check := func() {
+		if result := client.CheckAccess(context.Background(), sampleRequest()); result.Allowed() {
+			t.Fatalf("result = %+v, want DENY", result)
+		}
+	}
+	check()
+	check()
+	*clock = clock.Add(refusalLogInterval - time.Second)
+	check()
+	*clock = clock.Add(time.Second)
+	check()
+
+	lines := out.lines()
+	if len(lines) != 2 {
+		t.Fatalf("logged %d lines, want 2:\n%s", len(lines), strings.Join(lines, "\n"))
+	}
+	for i, want := range []string{"skipped=0", "skipped=2"} {
+		for _, part := range []string{"refused, not decided", "mode=ENFORCED", want} {
+			if !strings.Contains(lines[i], part) {
+				t.Errorf("line %d: %q is not in %s", i, part, lines[i])
+			}
+		}
+	}
+}
+
+// Only a refusal is logged: never a decision, DENY included, and never a
+// check that failed for another reason.
+func TestOnlyARefusalIsLogged(t *testing.T) {
+	deny := &accessv1.AccessCheckResponse{Result: accessv1.AccessDecision_DENY.Enum()}
+	for name, answer := range map[string]func(context.Context) (*accessv1.AccessCheckResponse, error){
+		"allow":       answering(allow(), nil),
+		"deny":        answering(deny, nil),
+		"no decision": answering(&accessv1.AccessCheckResponse{}, nil),
+		"unavailable": answering(nil, status.Error(codes.Unavailable, "no route")),
+		"internal":    answering(nil, status.Error(codes.Internal, "policy")),
+		"timeout":     answering(nil, status.Error(codes.DeadlineExceeded, "slow")),
+	} {
+		for _, mode := range []string{"ENFORCED", "LOG_ONLY"} {
+			client := clientFor(t, map[string]string{"SENSIVE_DAC_URL": serve(t, newChecker(answer), nil), "SENSIVE_MODE": mode})
+			out, _ := logging(client)
+			client.CheckAccess(context.Background(), sampleRequest())
+			if err := client.Close(); err != nil {
+				t.Fatal(err)
+			}
+			if lines := out.lines(); len(lines) != 0 {
+				t.Errorf("%s in %s logged:\n%s", name, mode, strings.Join(lines, "\n"))
+			}
+		}
+	}
+	// A check the caller cancelled is the caller's doing.
+	client := clientFor(t, map[string]string{"SENSIVE_DAC_URL": serve(t, newChecker(answering(allow(), nil)), nil)})
+	out, _ := logging(client)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	client.CheckAccess(ctx, sampleRequest())
+	if lines := out.lines(); len(lines) != 0 {
+		t.Errorf("a cancelled check logged:\n%s", strings.Join(lines, "\n"))
+	}
 }

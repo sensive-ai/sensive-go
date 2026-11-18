@@ -112,6 +112,7 @@ type Client struct {
 
 	inFlight   chan struct{}
 	background sync.WaitGroup
+	refusals   *refusalLog
 	// mu guards closed, so a background check never starts once Close has
 	// begun waiting for the others.
 	mu     sync.Mutex
@@ -145,7 +146,7 @@ func FromEnv(opts ...grpc.DialOption) (*Client, error) {
 
 // newClient is the client for settings already resolved.
 func newClient(s settings, opts ...grpc.DialOption) (*Client, error) {
-	client := &Client{settings: s, inFlight: make(chan struct{}, logOnlyInFlight)}
+	client := &Client{settings: s, inFlight: make(chan struct{}, logOnlyInFlight), refusals: newRefusalLog()}
 	if s.mode == ModeDisabled {
 		return client, nil
 	}
@@ -189,6 +190,12 @@ func (c *Client) Close() error {
 //   - LOG_ONLY: ALLOW, at once. The check is sent in the background, and
 //     the checker records what it would have decided.
 //   - DISABLED: ALLOW, at once. Nothing is sent.
+//
+// A check the checker refuses before deciding it, because the request is
+// malformed or the caller is not accepted, means the client is
+// misconfigured: it is logged as a warning through slog's default logger,
+// in ENFORCED and LOG_ONLY mode, at most once a minute (README.md,
+// "Refused checks are logged").
 func (c *Client) CheckAccess(ctx context.Context, req *accessv1.AccessCheckRequest) Result {
 	switch c.settings.mode {
 	case ModeDisabled:
@@ -200,6 +207,7 @@ func (c *Client) CheckAccess(ctx context.Context, req *accessv1.AccessCheckReque
 	ctx, cancel := context.WithTimeout(ctx, c.settings.timeout)
 	defer cancel()
 	resp, err := c.authorization.CheckAccess(ctx, c.stamped(req, accessv1.Mode_ENFORCED))
+	c.refusals.report(ModeEnforced, err)
 	return decided(resp, err)
 }
 
@@ -238,7 +246,8 @@ func (c *Client) sendInBackground(req *accessv1.AccessCheckRequest) {
 		}()
 		ctx, cancel := context.WithTimeout(context.Background(), c.settings.timeout)
 		defer cancel()
-		_, _ = c.authorization.CheckAccess(ctx, req)
+		_, err := c.authorization.CheckAccess(ctx, req)
+		c.refusals.report(ModeLogOnly, err)
 	}()
 }
 

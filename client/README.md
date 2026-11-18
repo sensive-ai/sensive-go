@@ -122,6 +122,24 @@ failed for example, `client.Failed(cause)` is the result to act on: `DENY`
 in `ENFORCED` mode and `ALLOW` in the other two, the same as a check that
 failed.
 
+## Refused checks are logged
+
+The checker refuses a check before deciding it when the request is
+malformed or it will not take a check from the caller. Either means the
+client is misconfigured, and a refused check is never decided, so the
+access log does not record it. The client logs it as a warning through
+`slog`'s default logger, in `ENFORCED` and `LOG_ONLY` mode, at most once a
+minute:
+
+```
+level=WARN msg="sensive: access check refused, not decided: the request is malformed; the detail names the field and the rule it broke" reason=malformed mode=LOG_ONLY detail="capability.sources[0]: value must not be in list [0] [enum.not_in]" skipped=0
+```
+
+`reason` is `malformed`, `unauthenticated` or `forbidden`; `detail` is the
+checker's explanation, which for a malformed request names the field and
+the rule it broke; and `skipped` counts the refusals since the last line
+that were not logged.
+
 ## Testing
 
 Run tests with `SENSIVE_MODE=DISABLED` and every check is `ALLOW`, with no
